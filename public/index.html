@@ -8,67 +8,65 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: #02040a; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        .header { padding: 1rem; font-size: 0.9rem; letter-spacing: 2px; color: #00f2fe; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+        .header { padding: 1rem; font-size: 0.85rem; letter-spacing: 2px; color: #ffffff; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
 
         .workspace { display: flex; flex: 1; position: relative; overflow: hidden; }
 
+        /* Esfera de Partículas Brancas 3D */
         .sphere-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         canvas#particleCanvas { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        .status-box { z-index: 2; position: absolute; bottom: 3rem; background: rgba(0,0,0,0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem 1.6rem; border-radius: 30px; font-size: 0.95rem; color: #e2e8f0; text-align: center; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(10, 15, 25, 0.75); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #ffffff; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
 
-        /* Painel Dual App Dinâmico */
-        .dual-panel { width: 0px; opacity: 0; background: rgba(5,10,25,0.95); border-left: 1px solid rgba(255,255,255,0.1); transition: all 0.4s ease; display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
-        .dual-panel.active { width: 50vw; opacity: 1; }
-        .panel-header { padding: 1rem; background: rgba(0,0,0,0.5); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #00f2fe; }
+        /* Interface Dual App Completa */
+        .dual-panel { width: 0px; opacity: 0; background: #050a14; border-left: 1px solid rgba(255,255,255,0.12); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
+        .dual-panel.active { width: 55vw; opacity: 1; }
+        .panel-header { padding: 1rem 1.2rem; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ffffff; font-weight: 600; }
         .panel-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; }
         iframe, .view-frame { width: 100%; flex: 1; border: none; background: #000; border-radius: 8px; }
 
-        /* Histórico tipo WhatsApp */
+        /* Histórico Estilo WhatsApp */
         .chat-log { display: flex; flex-direction: column; gap: 0.8rem; }
         .chat-bubble { padding: 0.8rem 1rem; border-radius: 12px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
         .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
         .chat-bubble.ai { background: #202c33; align-self: flex-start; color: #e9edef; border: 1px solid rgba(255,255,255,0.05); }
 
         /* Teclado Adaptativo */
-        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(10,15,30,0.98); border-top: 1px solid rgba(0,242,254,0.3); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
+        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(5, 10, 20, 0.98); border-top: 1px solid rgba(255,255,255,0.2); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
         .adaptive-keyboard.active { bottom: 0; }
-        .adaptive-keyboard input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; color: #fff; font-size: 1rem; }
-        .adaptive-keyboard button { background: #00f2fe; color: #000; border: none; padding: 0 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .adaptive-keyboard input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; }
+        .adaptive-keyboard button { background: #ffffff; color: #000; border: none; padding: 0 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <span>Nexus Core // Autonomous Interface</span>
-        <span id="micStatus" style="color: #00f2fe;">● Escuta Ativa</span>
+        <span>Nexus Core // Autonomous System</span>
+        <span id="micStatus" style="color: #ffffff;">● Escuta Contínua Ativa</span>
     </div>
 
     <div class="workspace">
-        <!-- Esfera de Partículas Brancas Otimizadas -->
         <div class="sphere-container">
             <canvas id="particleCanvas"></canvas>
-            <div id="statusText" class="status-box">Aguardando comando de voz (Ex: "Criar jogo", "Abrir YouTube", "Histórico")</div>
+            <div id="statusText" class="status-box">Ouvindo em 2º plano... Diga "Criar jogo", "Histórico" ou "Abrir teclado"</div>
         </div>
 
-        <!-- Painel Dual App Dinâmico -->
         <div id="dualPanel" class="dual-panel">
             <div class="panel-header">
-                <span id="panelTitle">Painel Dual App</span>
+                <span id="panelTitle">Dual App Studio</span>
                 <span style="cursor:pointer;" onclick="closePanel()">✕ Fechar</span>
             </div>
             <div class="panel-body" id="panelBody"></div>
         </div>
     </div>
 
-    <!-- Teclado Adaptativo -->
     <div id="adaptiveKeyboard" class="adaptive-keyboard">
         <input type="text" id="manualInput" placeholder="Digite seu comando manual...">
         <button onclick="sendManual()">Enviar</button>
     </div>
 
     <script>
-        // --- 1. CONFIGURAÇÃO DA VOZ MASCULINA HUMANA ---
+        // Voz Masculina Humana
         let maleVoice = null;
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
@@ -83,13 +81,13 @@
                 const utterance = new SpeechSynthesisUtterance(text);
                 if (maleVoice) utterance.voice = maleVoice;
                 utterance.lang = 'pt-BR';
-                utterance.pitch = 0.82; // Tom mais grave / masculino
+                utterance.pitch = 0.82;
                 utterance.rate = 1.05;
                 window.speechSynthesis.speak(utterance);
             }
         }
 
-        // --- 2. MOTOR DE PARTÍCULAS BRANCAS OTIMIZADAS (ESFERA 3D) ---
+        // Esfera 3D de 2000 Partículas Brancas
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -102,7 +100,7 @@
 
         const numParticles = 2000;
         const particles = [];
-        let sphereRadius = 140;
+        let sphereRadius = 135;
         let rotationAngle = 0;
         let isSpeakingOrListening = false;
 
@@ -113,7 +111,7 @@
                 ox: sphereRadius * Math.sin(theta) * Math.cos(phi),
                 oy: sphereRadius * Math.sin(theta) * Math.sin(phi),
                 oz: sphereRadius * Math.cos(theta),
-                size: Math.random() * 1.5 + 0.6
+                size: Math.random() * 1.4 + 0.6
             });
         }
 
@@ -122,9 +120,8 @@
             const cx = width / 2;
             const cy = height / 2;
             
-            // Animação fluida e suave
-            rotationAngle += isSpeakingOrListening ? 0.035 : 0.007;
-            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.012) * 30 : 0);
+            rotationAngle += isSpeakingOrListening ? 0.03 : 0.006;
+            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.01) * 25 : 0);
 
             particles.forEach(p => {
                 let x = p.ox * (currentRadius / sphereRadius);
@@ -140,9 +137,8 @@
                 let px = x1 * scale + cx;
                 let py = y * scale + cy;
 
-                // Partículas totalmente brancas com opacidade dinâmica baseada na profundidade e atividade
                 let alpha = (z1 + sphereRadius) / (sphereRadius * 2);
-                alpha = Math.max(0.15, alpha * (isSpeakingOrListening ? 0.95 : 0.6));
+                alpha = Math.max(0.12, alpha * (isSpeakingOrListening ? 0.95 : 0.55));
 
                 ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.fillRect(px, py, p.size * scale, p.size * scale);
@@ -151,7 +147,7 @@
         }
         renderParticles();
 
-        // --- 3. RECONHECIMENTO DE VOZ & COMANDOS ---
+        // Reconhecimento de Voz & Comunicação
         let chatHistory = [];
         const statusText = document.getElementById("statusText");
 
@@ -193,9 +189,9 @@
                     handleActions(data.action_required, data.data);
                 }
             } catch (err) {
-                statusText.innerText = "Erro de conexão com o núcleo.";
+                statusText.innerText = "Falha na conexão com o núcleo.";
             } finally {
-                setTimeout(() => { isSpeakingOrListening = false; }, 3500);
+                setTimeout(() => { isSpeakingOrListening = false; }, 3000);
             }
         }
 
@@ -209,7 +205,7 @@
 
             if (action === 'open_dual_app_game' || action === 'open_browser') {
                 panel.classList.add("active");
-                title.innerText = action === 'open_dual_app_game' ? "Dual App - Game Studio" : "Navegador Interno Nexus";
+                title.innerText = action === 'open_dual_app_game' ? "Dual App - Game Studio (Clean Build)" : "Dual App - Web Browser";
                 body.innerHTML = `<iframe class="view-frame" srcdoc="${data.replace(/"/g, '&quot;')}"></iframe>`;
             } 
             else if (action === 'open_keyboard') {
@@ -218,7 +214,7 @@
             }
             else if (action === 'open_history') {
                 panel.classList.add("active");
-                title.innerText = "Histórico de Atividades (WhatsApp Style)";
+                title.innerText = "Histórico de Conversas";
                 let html = '<div class="chat-log">';
                 chatHistory.forEach(c => {
                     html += `<div class="chat-bubble ${c.sender}">${c.text}</div>`;
@@ -228,8 +224,8 @@
             }
             else if (action === 'open_instagram') {
                 panel.classList.add("active");
-                title.innerText = "Módulo de Integração - Instagram";
-                body.innerHTML = `<div style="padding:2rem;text-align:center;color:#00f2fe;">Módulo Instagram conectado com sucesso.</div>`;
+                title.innerText = "Módulo Instagram";
+                body.innerHTML = `<div style="padding:2rem;text-align:center;color:#fff;">Integração do Instagram ativada via voice command.</div>`;
             }
         }
 
