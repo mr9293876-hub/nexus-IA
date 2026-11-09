@@ -10,28 +10,27 @@
 
         .workspace { display: flex; flex: 1; position: relative; overflow: hidden; }
 
-        /* Esfera de 2000 Partículas Brancas 3D */
         .sphere-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         canvas#particleCanvas { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #e2e8f0; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); }
+        .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #ffffff; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); }
 
-        /* Painel Dual App Totalmente Limpo (Sem títulos visíveis feios) */
-        .dual-panel { width: 0px; opacity: 0; background: #000000; border-left: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
-        .dual-panel.active { width: 55vw; opacity: 1; }
-        .panel-body { flex: 1; display: flex; flex-direction: column; position: relative; }
-        .close-btn { position: absolute; top: 15px; right: 20px; z-index: 15; background: rgba(255,255,255,0.1); color: #fff; border: none; padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        /* Painel Dual App Otimizado e Completo */
+        .dual-panel { width: 0px; opacity: 0; background: #020408; border-left: 1px solid rgba(255,255,255,0.15); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 10; overflow: hidden; box-shadow: -10px 0 30px rgba(0,0,0,0.8); }
+        .dual-panel.active { width: 60vw; opacity: 1; }
+        .panel-body { flex: 1; display: flex; flex-direction: column; position: relative; height: 100%; }
+        .close-btn { position: absolute; top: 15px; right: 20px; z-index: 15; background: rgba(255,255,255,0.15); color: #fff; border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
         .close-btn:hover { background: rgba(255,255,255,0.3); }
-        iframe, .view-frame { width: 100%; flex: 1; border: none; background: #000; }
+        iframe, .view-frame { width: 100%; flex: 1; border: none; background: #000; height: 100%; }
 
         /* Histórico Estilo WhatsApp */
-        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; padding: 2rem; overflow-y: auto; height: 100%; }
+        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; padding: 3rem 2rem 2rem 2rem; overflow-y: auto; height: 100%; }
         .chat-bubble { padding: 0.8rem 1rem; border-radius: 12px; max-width: 80%; font-size: 0.95rem; line-height: 1.4; }
         .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
         .chat-bubble.ai { background: #202c33; align-self: flex-start; color: #e9edef; border: 1px solid rgba(255,255,255,0.05); }
 
         /* Teclado Adaptativo Flutuante */
-        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(10,10,10,0.98); border-top: 1px solid rgba(255,255,255,0.15); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
+        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(10,10,10,0.98); border-top: 1px solid rgba(255,255,255,0.2); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
         .adaptive-keyboard.active { bottom: 0; }
         .adaptive-keyboard input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; }
         .adaptive-keyboard button { background: #ffffff; color: #000; border: none; padding: 0 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -43,10 +42,10 @@
         <!-- Esfera 3D de 2000 Partículas Brancas -->
         <div class="sphere-container">
             <canvas id="particleCanvas"></canvas>
-            <div id="statusText" class="status-box">Aguardando comando de voz...</div>
+            <div id="statusText" class="status-box">Diga "Nexus" seguido do seu comando...</div>
         </div>
 
-        <!-- Painel Dual App (Limpo) -->
+        <!-- Painel Dual App Otimizado -->
         <div id="dualPanel" class="dual-panel">
             <div class="panel-body" id="panelBody">
                 <button class="close-btn" onclick="closePanel()">✕ Fechar</button>
@@ -61,7 +60,7 @@
     </div>
 
     <script>
-        // --- VOZ ESTILO ULTRON (Calma, calculista e profunda) ---
+        // Voz Ultron (Calma, profunda e calculista)
         let ultronVoice = null;
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
@@ -76,13 +75,13 @@
                 const utterance = new SpeechSynthesisUtterance(text);
                 if (ultronVoice) utterance.voice = ultronVoice;
                 utterance.lang = 'pt-BR';
-                utterance.pitch = 0.75; // Tom grave e imponente estilo Ultron
-                utterance.rate = 0.95;  // Fala pausada e calma
+                utterance.pitch = 0.75;
+                utterance.rate = 0.95;
                 window.speechSynthesis.speak(utterance);
             }
         }
 
-        // --- MOTOR DE 2000 PARTÍCULAS BRANCAS ---
+        // Esfera 3D de 2000 Partículas Brancas Otimizadas
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -142,7 +141,7 @@
         }
         renderParticles();
 
-        // --- RECONHECIMENTO DE VOZ CONTÍNUO ---
+        // Escuta Contínua com Wake Word "Nexus"
         let chatHistory = [];
         const statusText = document.getElementById("statusText");
 
@@ -155,9 +154,18 @@
 
             recognition.onresult = async (event) => {
                 const transcript = event.results[event.results.length - 1][0].transcript.trim();
-                statusText.innerText = `Comando: "${transcript}"`;
-                addChat(transcript, 'user');
-                await processCommand(transcript);
+                console.log("Ouviu:", transcript);
+
+                // Requer a wake word "Nexus" para acionar
+                if (transcript.toLowerCase().includes('nexus')) {
+                    statusText.innerText = `Comando: "${transcript}"`;
+                    addChat(transcript, 'user');
+                    await processCommand(transcript);
+                }
+            };
+
+            recognition.onend = () => {
+                try { recognition.start(); } catch (e) {}
             };
 
             try { recognition.start(); } catch (e) { console.log("Mic ativo"); }
@@ -207,7 +215,7 @@
             }
             else if (action === 'open_history') {
                 panel.classList.add("active");
-                let html = '<button class="close-btn" onclick="closePanel()">✕ Fechar</button><div class="chat-log" style="margin-top:30px;">';
+                let html = '<button class="close-btn" onclick="closePanel()">✕ Fechar</button><div class="chat-log">';
                 chatHistory.forEach(c => {
                     html += `<div class="chat-bubble ${c.sender}">${c.text}</div>`;
                 });
@@ -224,7 +232,7 @@
             const val = document.getElementById('manualInput').value;
             if(val) {
                 addChat(val, 'user');
-                processCommand(val);
+                processCommand("Nexus " + val);
                 document.getElementById('manualInput').value = '';
             }
         }
