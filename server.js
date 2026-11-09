@@ -1,48 +1,48 @@
-require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const { spawn } = require('child_process');
-
+const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(cors());
 app.use(express.json());
+// Serve a pasta public onde estão os ficheiros HTML e JS
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota de status do núcleo
+// Rota principal que carrega a interface visual
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'online', 
-    runtime: 'Node.js Gateway Active',
-    system: 'Nexus Core',
-    timestamp: Date.now() 
-  });
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Endpoint para receber sinais do jogo/navegador e processar via Python se preciso
-app.post('/api/process-signal', (req, res) => {
-  const payload = req.body;
-  console.log(`[Node.js Gateway] Sinal recebido:`, payload);
-
-  // Exemplo de chamada segura para o script Python em segundo plano
-  const pythonProcess = spawn('python', ['./ai-core/main.py', JSON.stringify(payload)]);
-  
-  let pythonData = '';
-
-  pythonProcess.stdout.on('data', (data) => {
-    pythonData += data.toString();
-  });
-
-  pythonProcess.on('close', (code) => {
+// Rota que processa os comandos da assistente via Hugging Face
+app.post('/api/assistant/command', async (req, res) => {
     try {
-      const parsedResult = pythonData ? JSON.parse(pythonData) : { status: 'processed' };
-      res.json({ success: true, gateway: 'Node.js', ai_response: parsedResult });
-    } catch (e) {
-      res.json({ success: true, gateway: 'Node.js', raw_output: pythonData });
+        const { command } = req.body;
+        console.log(`[Nexus Assistant] Comando recebido: ${command}`);
+
+        const responseUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+        
+        const apiResponse = await fetch(responseUrl, {
+            headers: { 
+                Authorization: `Bearer ${process.env.HF_TOKEN}`, 
+                "Content-Type": "application/json" 
+            },
+            method: "POST",
+            body: JSON.stringify({ inputs: `Atue como a assistente digital Nexus. Responda de forma direta e otimizada ao comando: ${command}` }),
+        });
+
+        const result = await apiResponse.json();
+        const reply = Array.isArray(result) && result[0]?.generated_text ? result[0].generated_text : "Comando processado com sucesso.";
+
+        res.json({
+            status: "success",
+            response: reply,
+            action_required: command.toLowerCase().includes('instagram') ? 'open_instagram_overlay' : 'none'
+        });
+    } catch (err) {
+        console.error("[Erro no Servidor]:", err);
+        res.status(500).json({ status: 'error', message: 'Falha ao processar comando na assistente.' });
     }
-  });
 });
 
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Gateway Node.js rodando na porta ${PORT}`);
+    console.log(`[Nexus Hub] Servidor rodando na porta ${PORT}`);
 });

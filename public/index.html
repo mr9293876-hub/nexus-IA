@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus - AI Assistant</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: #050814; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 2rem; overflow: hidden; }
+
+        .header { font-size: 1.2rem; font-weight: 500; letter-spacing: 1px; color: #8ab4f8; margin-top: 1rem; }
+
+        .orb-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+        .magic-orb {
+            width: 140px; height: 140px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(0,242,254,1) 0%, rgba(79,172,254,0.6) 50%, rgba(0,0,0,0) 80%);
+            box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.8);
+            animation: pulse-orb 3s infinite alternate ease-in-out;
+            cursor: pointer;
+        }
+        @keyframes pulse-orb {
+            0% { transform: scale(0.95); box-shadow: 0 0 20px rgba(0,242,254,0.4); }
+            100% { transform: scale(1.08); box-shadow: 0 0 50px rgba(0,242,254,0.8); }
+        }
+        .status-text { margin-top: 1.5rem; font-size: 1.1rem; color: #cbd5e1; font-weight: 300; text-align: center; }
+
+        .dynamic-overlay {
+            width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px; padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem;
+            transition: all 0.4s ease; transform: translateY(20px); opacity: 0; pointer-events: none;
+        }
+        .dynamic-overlay.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
+        .card-action {
+            background: rgba(255, 255, 255, 0.08); padding: 0.8rem 1rem; border-radius: 12px;
+            display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .card-action:hover { background: rgba(255, 255, 255, 0.15); }
+    </style>
+</head>
+<body>
+    <div class="header">Nexus AI Assistant</div>
+
+    <!-- Círculo Central Fixo -->
+    <div class="orb-container">
+        <div class="magic-orb" onclick="toggleListening()"></div>
+        <div id="statusText" class="status-text">Ouvindo em 2º plano...</div>
+    </div>
+
+    <!-- Sobreposição Dinâmica de Apps -->
+    <div id="dynamicOverlay" class="dynamic-overlay">
+        <div class="card-action" onclick="executeAction('instagram')">
+            <span>📱 Verificar DMs do Instagram</span>
+            <span>➔</span>
+        </div>
+        <div class="card-action" onclick="executeAction('spotify')">
+            <span>🎵 Tocar música no Spotify</span>
+            <span>➔</span>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

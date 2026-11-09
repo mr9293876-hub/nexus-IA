@@ -1,1 +1,2 @@
-# Adicione aqui bibliotecas futuras se precisar, ex: requests, fastapi, uvicorn
+duckduckgo_search>=6.0.0
+requests>=2.31.0
