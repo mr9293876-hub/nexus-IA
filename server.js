@@ -1,23 +1,10 @@
-const express = require('express');
-const path = require('path');
-const app = express();
-
-app.use(express.json());
-// Serve a pasta public onde estão os ficheiros HTML e JS
-app.use(express.static(path.join(__dirname, 'public')));
-
-// Rota principal que carrega a interface visual
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Rota que processa os comandos da assistente via Hugging Face
 app.post('/api/assistant/command', async (req, res) => {
     try {
         const { command } = req.body;
         console.log(`[Nexus Assistant] Comando recebido: ${command}`);
 
-        const responseUrl = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2";
+        // Novo endpoint router oficial da Hugging Face
+        const responseUrl = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2";
         
         const apiResponse = await fetch(responseUrl, {
             headers: { 
@@ -40,9 +27,4 @@ app.post('/api/assistant/command', async (req, res) => {
         console.error("[Erro no Servidor]:", err);
         res.status(500).json({ status: 'error', message: 'Falha ao processar comando na assistente.' });
     }
-});
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`[Nexus Hub] Servidor rodando na porta ${PORT}`);
 });
