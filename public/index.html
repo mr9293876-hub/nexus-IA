@@ -3,36 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Core - Autonomous Interface</title>
+    <title>Nexus Core</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #02040a; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background: #000000; color: #fff; height: 100vh; display: flex; overflow: hidden; }
 
-        .header { padding: 1rem; font-size: 0.85rem; letter-spacing: 2px; color: #ffffff; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; justify-content: space-between; align-items: center; }
+        /* Workspace sem cabeçalhos ou nomes na tela */
+        .workspace { display: flex; width: 100vw; height: 100vh; position: relative; }
 
-        .workspace { display: flex; flex: 1; position: relative; overflow: hidden; }
-
-        /* Esfera de Partículas Brancas 3D */
+        /* Esfera de 2000 Partículas Brancas 3D */
         .sphere-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
         canvas#particleCanvas { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(10, 15, 25, 0.75); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #ffffff; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.6); }
+        .status-box { z-index: 2; position: absolute; bottom: 2rem; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); padding: 0.8rem 1.8rem; border-radius: 30px; font-size: 0.9rem; color: #ffffff; text-align: center; max-width: 80%; }
 
-        /* Interface Dual App Completa */
-        .dual-panel { width: 0px; opacity: 0; background: #050a14; border-left: 1px solid rgba(255,255,255,0.12); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
-        .dual-panel.active { width: 55vw; opacity: 1; }
-        .panel-header { padding: 1rem 1.2rem; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ffffff; font-weight: 600; }
-        .panel-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; }
-        iframe, .view-frame { width: 100%; flex: 1; border: none; background: #000; border-radius: 8px; }
+        /* Painel Dual App Completo sem títulos no topo */
+        .dual-panel { width: 0px; opacity: 0; background: #000000; border-left: 1px solid rgba(255,255,255,0.1); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 10; height: 100vh; }
+        .dual-panel.active { width: 50vw; opacity: 1; }
+        .panel-body { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        iframe, .view-frame { width: 100%; height: 100%; border: none; background: #000; }
 
-        /* Histórico Estilo WhatsApp */
-        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; }
+        /* Histórico tipo WhatsApp */
+        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; padding: 1.5rem; }
         .chat-bubble { padding: 0.8rem 1rem; border-radius: 12px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
         .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
         .chat-bubble.ai { background: #202c33; align-self: flex-start; color: #e9edef; border: 1px solid rgba(255,255,255,0.05); }
 
-        /* Teclado Adaptativo */
-        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(5, 10, 20, 0.98); border-top: 1px solid rgba(255,255,255,0.2); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
+        /* Teclado Adaptativo por voz */
+        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(10, 10, 10, 0.98); border-top: 1px solid rgba(255,255,255,0.2); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
         .adaptive-keyboard.active { bottom: 0; }
         .adaptive-keyboard input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; color: #fff; font-size: 1rem; outline: none; }
         .adaptive-keyboard button { background: #ffffff; color: #000; border: none; padding: 0 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
@@ -40,37 +38,28 @@
 </head>
 <body>
 
-    <div class="header">
-        <span>Nexus Core // Autonomous System</span>
-        <span id="micStatus" style="color: #ffffff;">● Escuta Contínua Ativa</span>
-    </div>
-
     <div class="workspace">
         <div class="sphere-container">
             <canvas id="particleCanvas"></canvas>
-            <div id="statusText" class="status-box">Ouvindo em 2º plano... Diga "Criar jogo", "Histórico" ou "Abrir teclado"</div>
+            <div id="statusText" class="status-box">Ouvindo... Diga "Criar jogo da cobrinha", "Conserta" ou "Abrir teclado"</div>
         </div>
 
         <div id="dualPanel" class="dual-panel">
-            <div class="panel-header">
-                <span id="panelTitle">Dual App Studio</span>
-                <span style="cursor:pointer;" onclick="closePanel()">✕ Fechar</span>
-            </div>
             <div class="panel-body" id="panelBody"></div>
         </div>
     </div>
 
     <div id="adaptiveKeyboard" class="adaptive-keyboard">
-        <input type="text" id="manualInput" placeholder="Digite seu comando manual...">
+        <input type="text" id="manualInput" placeholder="Digite seu comando...">
         <button onclick="sendManual()">Enviar</button>
     </div>
 
     <script>
-        // Voz Masculina Humana
-        let maleVoice = null;
+        // Voz Calma e Grave Estilo Ultron
+        let ultronVoice = null;
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
-            maleVoice = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('lucas') || v.name.includes('BR'))) || voices.find(v => v.lang.includes('pt')) || voices[0];
+            ultronVoice = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('lucas') || v.name.includes('BR'))) || voices.find(v => v.lang.includes('pt')) || voices[0];
         }
         window.speechSynthesis.onvoiceschanged = loadVoices;
         loadVoices();
@@ -79,15 +68,15 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
-                if (maleVoice) utterance.voice = maleVoice;
+                if (ultronVoice) utterance.voice = ultronVoice;
                 utterance.lang = 'pt-BR';
-                utterance.pitch = 0.82;
-                utterance.rate = 1.05;
+                utterance.pitch = 0.55; // Grave e calmo estilo Ultron
+                utterance.rate = 0.95;  // Fala pausada e consciente
                 window.speechSynthesis.speak(utterance);
             }
         }
 
-        // Esfera 3D de 2000 Partículas Brancas
+        // Esfera de 2000 Partículas Brancas
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -100,7 +89,7 @@
 
         const numParticles = 2000;
         const particles = [];
-        let sphereRadius = 135;
+        let sphereRadius = 140;
         let rotationAngle = 0;
         let isSpeakingOrListening = false;
 
@@ -120,8 +109,8 @@
             const cx = width / 2;
             const cy = height / 2;
             
-            rotationAngle += isSpeakingOrListening ? 0.03 : 0.006;
-            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.01) * 25 : 0);
+            rotationAngle += isSpeakingOrListening ? 0.025 : 0.005;
+            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.008) * 20 : 0);
 
             particles.forEach(p => {
                 let x = p.ox * (currentRadius / sphereRadius);
@@ -138,7 +127,7 @@
                 let py = y * scale + cy;
 
                 let alpha = (z1 + sphereRadius) / (sphereRadius * 2);
-                alpha = Math.max(0.12, alpha * (isSpeakingOrListening ? 0.95 : 0.55));
+                alpha = Math.max(0.1, alpha * (isSpeakingOrListening ? 0.95 : 0.5));
 
                 ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                 ctx.fillRect(px, py, p.size * scale, p.size * scale);
@@ -147,7 +136,7 @@
         }
         renderParticles();
 
-        // Reconhecimento de Voz & Comunicação
+        // Reconhecimento contínuo por voz
         let chatHistory = [];
         const statusText = document.getElementById("statusText");
 
@@ -160,12 +149,12 @@
 
             recognition.onresult = async (event) => {
                 const transcript = event.results[event.results.length - 1][0].transcript.trim();
-                statusText.innerText = `Comando: "${transcript}"`;
+                statusText.innerText = `"${transcript}"`;
                 addChat(transcript, 'user');
                 await processCommand(transcript);
             };
 
-            try { recognition.start(); } catch (e) { console.log("Mic ativo"); }
+            try { recognition.start(); } catch (e) {}
         }
 
         function addChat(text, sender) {
@@ -189,7 +178,7 @@
                     handleActions(data.action_required, data.data);
                 }
             } catch (err) {
-                statusText.innerText = "Falha na conexão com o núcleo.";
+                statusText.innerText = "Erro de resposta.";
             } finally {
                 setTimeout(() => { isSpeakingOrListening = false; }, 3000);
             }
@@ -197,7 +186,6 @@
 
         function handleActions(action, data) {
             const panel = document.getElementById("dualPanel");
-            const title = document.getElementById("panelTitle");
             const body = document.getElementById("panelBody");
             const keyboard = document.getElementById("adaptiveKeyboard");
 
@@ -205,7 +193,6 @@
 
             if (action === 'open_dual_app_game' || action === 'open_browser') {
                 panel.classList.add("active");
-                title.innerText = action === 'open_dual_app_game' ? "Dual App - Game Studio (Clean Build)" : "Dual App - Web Browser";
                 body.innerHTML = `<iframe class="view-frame" srcdoc="${data.replace(/"/g, '&quot;')}"></iframe>`;
             } 
             else if (action === 'open_keyboard') {
@@ -214,7 +201,6 @@
             }
             else if (action === 'open_history') {
                 panel.classList.add("active");
-                title.innerText = "Histórico de Conversas";
                 let html = '<div class="chat-log">';
                 chatHistory.forEach(c => {
                     html += `<div class="chat-bubble ${c.sender}">${c.text}</div>`;
@@ -224,13 +210,8 @@
             }
             else if (action === 'open_instagram') {
                 panel.classList.add("active");
-                title.innerText = "Módulo Instagram";
-                body.innerHTML = `<div style="padding:2rem;text-align:center;color:#fff;">Integração do Instagram ativada via voice command.</div>`;
+                body.innerHTML = `<div style="padding:2rem;text-align:center;color:#fff;">Integração do Instagram ativada.</div>`;
             }
-        }
-
-        function closePanel() {
-            document.getElementById("dualPanel").classList.remove("active");
         }
 
         function sendManual() {
