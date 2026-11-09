@@ -1,0 +1,1 @@
+# Adicione aqui bibliotecas futuras se precisar, ex: requests, fastapi, uvicorn
