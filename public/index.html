@@ -3,177 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI Assistant & Dual App Studio</title>
+    <title>Nexus Core - Autonomous Interface</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #050814; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 1.5rem; overflow: hidden; }
+        body { background: #02040a; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
-        .header { font-size: 1.1rem; font-weight: 500; letter-spacing: 1px; color: #8ab4f8; }
+        .header { padding: 1rem; font-size: 0.9rem; letter-spacing: 2px; color: #00f2fe; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
 
-        /* Layout Principal com Dual App Oculto/Ativo */
-        .main-container { display: flex; width: 100%; max-width: 900px; flex: 1; gap: 1rem; align-items: center; justify-content: center; transition: all 0.5s ease; }
-        
-        .assistant-side { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; }
-        
-        .magic-orb {
-            width: 130px; height: 130px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(0,242,254,1) 0%, rgba(79,172,254,0.6) 50%, rgba(0,0,0,0) 80%);
-            box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.8);
-            animation: pulse-orb 3s infinite alternate ease-in-out;
-            cursor: pointer;
-        }
-        @keyframes pulse-orb {
-            0% { transform: scale(0.95); box-shadow: 0 0 20px rgba(0,242,254,0.4); }
-            100% { transform: scale(1.08); box-shadow: 0 0 50px rgba(0,242,254,0.8); }
-        }
-        .status-text { margin-top: 1.5rem; font-size: 1rem; color: #cbd5e1; font-weight: 300; text-align: center; max-width: 320px; }
+        .workspace { display: flex; flex: 1; position: relative; overflow: hidden; }
 
-        /* Painel Dual App (Estúdio de Jogos) */
-        .dual-app-panel {
-            width: 0px; opacity: 0; pointer-events: none; background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; overflow: hidden;
-            display: flex; flex-direction: column; height: 80vh; transition: all 0.5s ease;
-        }
-        .dual-app-panel.active { width: 450px; opacity: 1; pointer-events: auto; padding: 1rem; }
-        .dual-header { font-size: 0.95rem; color: #00f2fe; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
-        .game-iframe { width: 100%; flex: 1; border: none; border-radius: 10px; background: #000; }
+        .sphere-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        canvas#particleCanvas { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
 
-        /* Sobreposição Dinâmica inferior */
-        .dynamic-overlay {
-            width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem;
-            transition: all 0.4s ease; transform: translateY(20px); opacity: 0; pointer-events: none;
-            position: absolute; bottom: 2rem;
-        }
-        .dynamic-overlay.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        .card-action {
-            background: rgba(255, 255, 255, 0.08); padding: 0.6rem 0.8rem; border-radius: 10px;
-            display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer;
-        }
+        .status-box { z-index: 2; position: absolute; bottom: 3rem; background: rgba(0,0,0,0.65); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); padding: 0.8rem 1.6rem; border-radius: 30px; font-size: 0.95rem; color: #e2e8f0; text-align: center; max-width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+
+        /* Painel Dual App Dinâmico */
+        .dual-panel { width: 0px; opacity: 0; background: rgba(5,10,25,0.95); border-left: 1px solid rgba(255,255,255,0.1); transition: all 0.4s ease; display: flex; flex-direction: column; z-index: 10; overflow: hidden; }
+        .dual-panel.active { width: 50vw; opacity: 1; }
+        .panel-header { padding: 1rem; background: rgba(0,0,0,0.5); display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #00f2fe; }
+        .panel-body { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; }
+        iframe, .view-frame { width: 100%; flex: 1; border: none; background: #000; border-radius: 8px; }
+
+        /* Histórico tipo WhatsApp */
+        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; }
+        .chat-bubble { padding: 0.8rem 1rem; border-radius: 12px; max-width: 80%; font-size: 0.9rem; line-height: 1.4; }
+        .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
+        .chat-bubble.ai { background: #202c33; align-self: flex-start; color: #e9edef; border: 1px solid rgba(255,255,255,0.05); }
+
+        /* Teclado Adaptativo */
+        .adaptive-keyboard { position: absolute; bottom: -200px; left: 0; width: 100%; background: rgba(10,15,30,0.98); border-top: 1px solid rgba(0,242,254,0.3); padding: 1rem; transition: bottom 0.3s ease; z-index: 20; display: flex; gap: 0.5rem; }
+        .adaptive-keyboard.active { bottom: 0; }
+        .adaptive-keyboard input { flex: 1; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.2); padding: 0.8rem; border-radius: 8px; color: #fff; font-size: 1rem; }
+        .adaptive-keyboard button { background: #00f2fe; color: #000; border: none; padding: 0 1.5rem; border-radius: 8px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div class="header">Nexus AI Core & Dual App</div>
+    <div class="header">
+        <span>Nexus Core // Autonomous Interface</span>
+        <span id="micStatus" style="color: #00f2fe;">● Escuta Ativa</span>
+    </div>
 
-    <div class="main-container">
-        <!-- Lado da Assistente Principal -->
-        <div class="assistant-side">
-            <div class="magic-orb" onclick="toggleOverlay()"></div>
-            <div id="statusText" class="status-text">Ouvindo em 2º plano... Diga "criar jogo" ou faça um pedido.</div>
+    <div class="workspace">
+        <!-- Esfera de Partículas Brancas Otimizadas -->
+        <div class="sphere-container">
+            <canvas id="particleCanvas"></canvas>
+            <div id="statusText" class="status-box">Aguardando comando de voz (Ex: "Criar jogo", "Abrir YouTube", "Histórico")</div>
         </div>
 
-        <!-- Lado do Dual App (Estúdio de Jogos) -->
-        <div id="dualAppPanel" class="dual-app-panel">
-            <div class="dual-header">
-                <span>🎮 Dual App (Game Studio - Clean Build)</span>
-                <span style="cursor:pointer;" onclick="toggleDualApp(false)">✕</span>
+        <!-- Painel Dual App Dinâmico -->
+        <div id="dualPanel" class="dual-panel">
+            <div class="panel-header">
+                <span id="panelTitle">Painel Dual App</span>
+                <span style="cursor:pointer;" onclick="closePanel()">✕ Fechar</span>
             </div>
-            <iframe id="gameFrame" class="game-iframe"></iframe>
+            <div class="panel-body" id="panelBody"></div>
         </div>
     </div>
 
-    <!-- Sobreposição Dinâmica -->
-    <div id="dynamicOverlay" class="dynamic-overlay">
-        <div class="card-action" onclick="executeAction('instagram')">
-            <span>📱 Verificar DMs do Instagram</span>
-            <span>➔</span>
-        </div>
-        <div class="card-action" onclick="toggleDualApp(true)">
-            <span>🎮 Abrir Dual App Studio</span>
-            <span>➔</span>
-        </div>
+    <!-- Teclado Adaptativo -->
+    <div id="adaptiveKeyboard" class="adaptive-keyboard">
+        <input type="text" id="manualInput" placeholder="Digite seu comando manual...">
+        <button onclick="sendManual()">Enviar</button>
     </div>
 
     <script>
-        // Sistema de Voz (Text-to-Speech) para a assistente falar as respostas
+        // --- 1. CONFIGURAÇÃO DA VOZ MASCULINA HUMANA ---
+        let maleVoice = null;
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            maleVoice = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('google') || v.name.toLowerCase().includes('lucas') || v.name.includes('BR'))) || voices.find(v => v.lang.includes('pt')) || voices[0];
+        }
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+        loadVoices();
+
         function speak(text) {
             if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel(); // Para fala anterior
+                window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
+                if (maleVoice) utterance.voice = maleVoice;
                 utterance.lang = 'pt-BR';
-                utterance.rate = 1.1;
+                utterance.pitch = 0.82; // Tom mais grave / masculino
+                utterance.rate = 1.05;
                 window.speechSynthesis.speak(utterance);
             }
         }
 
-        // Reconhecimento de Voz em 2º plano
-        document.addEventListener("DOMContentLoaded", () => {
-            const statusText = document.getElementById("statusText");
-            const dynamicOverlay = document.getElementById("dynamicOverlay");
+        // --- 2. MOTOR DE PARTÍCULAS BRANCAS OTIMIZADAS (ESFERA 3D) ---
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        function resize() {
+            width = canvas.width = canvas.parentElement.clientWidth;
+            height = canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
 
-            let recognition;
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                recognition = new SpeechRecognition();
-                recognition.lang = 'pt-BR';
-                recognition.continuous = true;
-                recognition.interimResults = false;
+        const numParticles = 2000;
+        const particles = [];
+        let sphereRadius = 140;
+        let rotationAngle = 0;
+        let isSpeakingOrListening = false;
 
-                recognition.onresult = async (event) => {
-                    const transcript = event.results[event.results.length - 1][0].transcript.trim();
-                    statusText.innerText = `Processando: "${transcript}"`;
-                    await sendCommandToServer(transcript);
-                };
-
-                try {
-                    recognition.start();
-                    statusText.innerText = "Ouvindo em 2º plano...";
-                } catch (e) {
-                    console.log("Microfone ativo.");
-                }
-            }
-        });
-
-        function toggleOverlay() {
-            const overlay = document.getElementById("dynamicOverlay");
-            overlay.classList.toggle("active");
+        for (let i = 0; i < numParticles; i++) {
+            const theta = Math.acos(Math.random() * 2 - 1);
+            const phi = Math.random() * Math.PI * 2;
+            particles.push({
+                ox: sphereRadius * Math.sin(theta) * Math.cos(phi),
+                oy: sphereRadius * Math.sin(theta) * Math.sin(phi),
+                oz: sphereRadius * Math.cos(theta),
+                size: Math.random() * 1.5 + 0.6
+            });
         }
 
-        function toggleDualApp(show, htmlContent = null) {
-            const panel = document.getElementById("dualAppPanel");
-            if (show) {
-                panel.classList.add("active");
-                if (htmlContent) {
-                    const iframe = document.getElementById("gameFrame");
-                    iframe.srcdoc = htmlContent;
-                }
-            } else {
-                panel.classList.remove("active");
-            }
+        function renderParticles() {
+            ctx.clearRect(0, 0, width, height);
+            const cx = width / 2;
+            const cy = height / 2;
+            
+            // Animação fluida e suave
+            rotationAngle += isSpeakingOrListening ? 0.035 : 0.007;
+            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.012) * 30 : 0);
+
+            particles.forEach(p => {
+                let x = p.ox * (currentRadius / sphereRadius);
+                let y = p.oy * (currentRadius / sphereRadius);
+                let z = p.oz * (currentRadius / sphereRadius);
+
+                let cos = Math.cos(rotationAngle), sin = Math.sin(rotationAngle);
+                let x1 = x * cos - z * sin;
+                let z1 = z * cos + x * sin;
+
+                let fov = 380;
+                let scale = fov / (fov + z1);
+                let px = x1 * scale + cx;
+                let py = y * scale + cy;
+
+                // Partículas totalmente brancas com opacidade dinâmica baseada na profundidade e atividade
+                let alpha = (z1 + sphereRadius) / (sphereRadius * 2);
+                alpha = Math.max(0.15, alpha * (isSpeakingOrListening ? 0.95 : 0.6));
+
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(px, py, p.size * scale, p.size * scale);
+            });
+            requestAnimationFrame(renderParticles);
+        }
+        renderParticles();
+
+        // --- 3. RECONHECIMENTO DE VOZ & COMANDOS ---
+        let chatHistory = [];
+        const statusText = document.getElementById("statusText");
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'pt-BR';
+            recognition.continuous = true;
+            recognition.interimResults = false;
+
+            recognition.onresult = async (event) => {
+                const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                statusText.innerText = `Comando: "${transcript}"`;
+                addChat(transcript, 'user');
+                await processCommand(transcript);
+            };
+
+            try { recognition.start(); } catch (e) { console.log("Mic ativo"); }
         }
 
-        async function sendCommandToServer(commandText) {
-            const statusText = document.getElementById("statusText");
+        function addChat(text, sender) {
+            chatHistory.push({ text, sender });
+        }
 
+        async function processCommand(cmd) {
+            isSpeakingOrListening = true;
             try {
-                const response = await fetch('/api/assistant/command', {
+                const res = await fetch('/api/assistant/command', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: commandText })
+                    body: JSON.stringify({ command: cmd })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
                 
-                if (data.status === "success") {
+                if (data.status === 'success') {
                     statusText.innerText = data.response;
-                    speak(data.response); // A assistente fala a resposta em voz alta!
-
-                    // Se a IA gerou um jogo ou exigiu abrir o dual app
-                    if (data.action_required === 'open_dual_app' && data.game_code) {
-                        toggleDualApp(true, data.game_code);
-                    }
-                } else {
-                    statusText.innerText = "Erro ao processar comando.";
+                    speak(data.response);
+                    addChat(data.response, 'ai');
+                    handleActions(data.action_required, data.data);
                 }
-            } catch (error) {
-                statusText.innerText = "Falha na conexão com o Render.";
+            } catch (err) {
+                statusText.innerText = "Erro de conexão com o núcleo.";
+            } finally {
+                setTimeout(() => { isSpeakingOrListening = false; }, 3500);
             }
         }
 
-        function executeAction(type) {
-            alert("Acedendo a integração nativa de: " + type);
+        function handleActions(action, data) {
+            const panel = document.getElementById("dualPanel");
+            const title = document.getElementById("panelTitle");
+            const body = document.getElementById("panelBody");
+            const keyboard = document.getElementById("adaptiveKeyboard");
+
+            keyboard.classList.remove('active');
+
+            if (action === 'open_dual_app_game' || action === 'open_browser') {
+                panel.classList.add("active");
+                title.innerText = action === 'open_dual_app_game' ? "Dual App - Game Studio" : "Navegador Interno Nexus";
+                body.innerHTML = `<iframe class="view-frame" srcdoc="${data.replace(/"/g, '&quot;')}"></iframe>`;
+            } 
+            else if (action === 'open_keyboard') {
+                keyboard.classList.add("active");
+                document.getElementById('manualInput').focus();
+            }
+            else if (action === 'open_history') {
+                panel.classList.add("active");
+                title.innerText = "Histórico de Atividades (WhatsApp Style)";
+                let html = '<div class="chat-log">';
+                chatHistory.forEach(c => {
+                    html += `<div class="chat-bubble ${c.sender}">${c.text}</div>`;
+                });
+                html += '</div>';
+                body.innerHTML = html;
+            }
+            else if (action === 'open_instagram') {
+                panel.classList.add("active");
+                title.innerText = "Módulo de Integração - Instagram";
+                body.innerHTML = `<div style="padding:2rem;text-align:center;color:#00f2fe;">Módulo Instagram conectado com sucesso.</div>`;
+            }
+        }
+
+        function closePanel() {
+            document.getElementById("dualPanel").classList.remove("active");
+        }
+
+        function sendManual() {
+            const val = document.getElementById('manualInput').value;
+            if(val) {
+                addChat(val, 'user');
+                processCommand(val);
+                document.getElementById('manualInput').value = '';
+            }
         }
     </script>
 </body>

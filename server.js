@@ -9,119 +9,83 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Rota inteligente para comandos da assistente e estúdio de jogos (Dual App)
+// Rota ultra-otimizada de processamento de intenções e IA
 app.post('/api/assistant/command', async (req, res) => {
     try {
         const { command } = req.body;
-        console.log(`[Nexus Assistant] Comando recebido: ${command}`);
+        console.log(`[Nexus Core] Comando recebido: ${command}`);
+        const lower = command.toLowerCase();
 
-        const lowerCmd = command.toLowerCase();
         let action = 'none';
-        let generatedGameCode = null;
+        let payload = null;
+        let replyText = "";
 
-        // Se o utilizador pediu para criar um jogo
-        if (lowerCmd.includes('jogo') || lowerCmd.includes('game') || lowerCmd.includes('criar')) {
-            action = 'open_dual_app';
-            generatedGameCode = `
-<!DOCTYPE html>
+        // Mapeamento Adaptativo de Intenções por voz (Sinônimos e Comandos Diretos)
+        if (lower.includes('jogo') || lower.includes('game') || lower.includes('criar jogo')) {
+            action = 'open_dual_app_game';
+            replyText = "Estúdio Dual App ativado. Gerando jogo HTML5 com motor de som sintetizado.";
+            payload = `<!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <title>Nexus Game Studio - Clean Build</title>
-    <style>
-        body { margin: 0; background: #000; overflow: hidden; display: flex; justify-content: center; align-items: center; height: 100vh; color: #fff; font-family: monospace; }
-        canvas { background: #111; border: 2px solid #00f2fe; }
-    </style>
+<head><meta charset="UTF-8"><title>Nexus Game Studio</title>
+<style>body{margin:0;background:#030712;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:monospace;}canvas{border:2px solid #00f2fe;background:#000;}</style>
 </head>
 <body>
-    <div style="position: absolute; top: 10px; text-align: center; width: 100%;">Nexus Game - Use Setas para Jogar</div>
-    <canvas id="gameCanvas" width="400" height="500"></canvas>
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        
-        // Exemplo funcional com som sintetizado (Web Audio API)
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playSound() {
-            if (audioCtx.state === 'suspended') { audioCtx.resume(); }
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.frequency.value = 440;
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+<h3>Nexus Arcade - Use as Setas</h3>
+<canvas id="g" width="380" height="450"></canvas>
+<script>
+const cvs=document.getElementById('g'),ctx=cvs.getContext('2d');
+const ac=new(window.AudioContext||window.webkitAudioContext)();
+function beep(){if(ac.state==='suspended')ac.resume();let o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=520;g.gain.setValueAtTime(0.08,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.1);o.start();o.stop(ac.currentTime+0.1);}
+let p={x:160,y:400,w:50,h:15,c:'#00f2fe'},b={x:Math.random()*350,y:0,w:20,h:20,s:3};
+function loop(){
+  b.y+=b.s;if(b.y>450){b.y=0;b.x=Math.random()*350;beep();}
+  if(b.y>380&&b.x>p.x&&b.x<p.x+p.w){b.y=0;beep();}
+  ctx.clearRect(0,0,380,450);
+  ctx.fillStyle=p.c;ctx.fillRect(p.x,p.y,p.w,p.h);
+  ctx.fillStyle='#ff0055';ctx.fillRect(b.x,b.y,b.w,b.h);
+  requestAnimationFrame(loop);
+}
+loop();
+window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'&&p.x>0)p.x-=25;if(e.key==='ArrowRight'&&p.x<330)p.x+=25;});
+</script></body></html>`;
+        } 
+        else if (lower.includes('youtube') || lower.includes('site') || lower.includes('abrir site')) {
+            action = 'open_browser';
+            replyText = "Abrindo navegador interno no Nexus.";
+            payload = 'https://www.youtube.com/embed/live_stream?channel=UC'; // Exemplo de embed ou URL web
+        }
+        else if (lower.includes('teclado') || lower.includes('digitar')) {
+            action = 'open_keyboard';
+            replyText = "Abrindo teclado adaptativo.";
+        }
+        else if (lower.includes('histórico') || lower.includes('historico') || lower.includes('conversas')) {
+            action = 'open_history';
+            replyText = "Abrindo registo de histórico de comandos.";
+        }
+        else if (lower.includes('instagram') || lower.includes('conectar com instagram') || lower.includes('integre com instagram')) {
+            action = 'open_instagram';
+            replyText = "Conectando ao módulo de integração do Instagram.";
+        }
+        else {
+            // Chamada padrão à Hugging Face para conversas livres e engenharia reversa/código
+            const responseUrl = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2";
+            const apiResponse = await fetch(responseUrl, {
+                headers: { Authorization: `Bearer ${process.env.HF_TOKEN}`, "Content-Type": "application/json" },
+                method: "POST",
+                body: JSON.stringify({ inputs: `Atue como o núcleo avançado Nexus. Responda de forma direta e técnica: ${command}` })
+            });
+            const result = await apiResponse.json();
+            replyText = Array.isArray(result) && result[0]?.generated_text ? result[0].generated_text.slice(0, 150) : "Comando processado pelo motor central.";
+            action = 'text_response';
         }
 
-        let player = { x: 180, y: 420, width: 40, height: 40, color: '#00f2fe' };
-        let obstacle = { x: Math.random() * 360, y: 0, width: 30, height: 30, speed: 3 };
-
-        function update() {
-            obstacle.y += obstacle.speed;
-            if (obstacle.y > 500) {
-                obstacle.y = 0;
-                obstacle.x = Math.random() * 370;
-                playSound(); // Som integrado garantido
-            }
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            ctx.fillStyle = '#ff0055';
-            ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-        }
-
-        function loop() {
-            update();
-            draw();
-            requestAnimationFrame(loop);
-        }
-        loop();
-
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft' && player.x > 0) player.x -= 20;
-            if (e.key === 'ArrowRight' && player.x < 360) player.x += 20;
-        });
-    </script>
-</body>
-</html>`;
-        }
-
-        // Chamada à Hugging Face para obter a resposta de voz/texto da assistente
-        const responseUrl = "https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-Instruct-v0.2";
-        const apiResponse = await fetch(responseUrl, {
-            headers: { 
-                Authorization: `Bearer ${process.env.HF_TOKEN}`, 
-                "Content-Type": "application/json" 
-            },
-            method: "POST",
-            body: JSON.stringify({ inputs: `Atue como a assistente digital Nexus. Responda de forma direta, otimizada e humana ao comando: ${command}` }),
-        });
-
-        const result = await apiResponse.json();
-        let reply = "Comando processado com sucesso.";
-        if (Array.isArray(result) && result[0]?.generated_text) {
-            reply = result[0].generated_text.replace(`Atue como a assistente digital Nexus. Responda de forma direta, otimizada e humana ao comando: ${command}`, "").trim();
-        }
-
-        res.json({
-            status: "success",
-            response: reply || "Pronto por aqui!",
-            action_required: action,
-            game_code: generatedGameCode
-        });
+        res.json({ status: "success", response: replyText, action_required: action, data: payload });
 
     } catch (err) {
-        console.error("[Erro no Servidor]:", err);
-        res.status(500).json({ status: 'error', message: 'Falha ao processar comando.' });
+        console.error("[Erro Servidor]:", err);
+        res.status(500).json({ status: 'error', message: 'Falha no processamento do núcleo.' });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`[Nexus Hub] Servidor rodando na porta ${PORT}`);
-});
+app.listen(PORT, () => console.log(`[Nexus Core] Rodando na porta ${PORT}`));
