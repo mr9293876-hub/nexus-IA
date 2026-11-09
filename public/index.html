@@ -3,104 +3,167 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Core AI</title>
+    <title>Nexus-IA - Core</title>
     <style>
-        body { margin: 0; background: #050508; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        #ai-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid #1a1a2e; position: relative; }
-        #sandbox-panel { flex: 1; background: #0a0a10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .avatar-box { width: 200px; height: 200px; border-radius: 50%; border: 3px solid #00f3ff; box-shadow: 0 0 30px #00f3ff; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 15px #00f3ff; } 50% { box-shadow: 0 0 35px #00f3ff; } 100% { box-shadow: 0 0 15px #00f3ff; } }
-        #status-text { margin-top: 20px; font-size: 1.2rem; color: #00f3ff; text-transform: uppercase; letter-spacing: 2px; }
-        #output-text { margin: 15px; text-align: center; max-width: 80%; font-size: 1rem; color: #ccc; }
-        iframe { width: 100%; height: 100%; border: none; }
-        .btn-talk { background: #00f3ff; color: #000; font-weight: bold; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #000000;
+            overflow: hidden;
+            font-family: monospace;
+            color: #ffffff;
+        }
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            padding: 20px;
+        }
+        .status-box {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            width: fit-content;
+        }
+        .error-msg {
+            color: #ff3333;
+        }
     </style>
 </head>
 <body>
 
-    <div id="ai-panel">
-        <div class="avatar-box">
-            <h1 style="color:#00f3ff; font-family: monospace;">NEXUS</h1>
-        </div>
-        <div id="status-text">Aguardando comando...</div>
-        <div id="output-text">Diga "Nexus" seguido do seu pedido (ex: "Nexus cria um jogo").</div>
-        <button class="btn-talk" onclick="iniciarVoz()">Ativar Escuta Continua</button>
-    </div>
+    <!-- Canvas onde corre a esfera 3D de pontos -->
+    <canvas id="nexusCanvas"></canvas>
 
-    <div id="sandbox-panel">
-        <iframe id="game-frame" srcdoc="<h2 style='color:#555; text-align:center; margin-top:40%; font-family:sans-serif;'>Painel Sandbox / Jogos</h2>"></iframe>
+    <!-- Camada da tua interface original -->
+    <div id="ui-layer">
+        <div class="status-box" id="status">
+            NEXUS CORE // SISTEMA ONLINE
+        </div>
+        <div class="status-box error-msg" id="error-box" style="display:none;">
+            Erro de conexão.
+        </div>
     </div>
 
     <script>
         const RENDER_URL = 'https://nexus-ia-syc5.onrender.com';
-        const statusText = document.getElementById('status-text');
-        const outputText = document.getElementById('output-text');
-        const gameFrame = document.getElementById('game-frame');
-
-        // Configuração de Sintese de Voz (Falar)
-        function falar(texto) {
-            const synth = window.speechSynthesis;
-            const utterThis = new SpeechSynthesisUtterance(texto);
-            utterThis.lang = 'pt-BR';
-            synth.speak(utterThis);
-        }
-
-        // Reconhecimento de Voz (Ouvir)
-        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
-        if (window.SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.lang = 'pt-BR';
-            recognition.interimResults = false;
+        // --- ANIMAÇÃO DA ESFERA 3D (Aprox. 3000 pontos em rotação) ---
+        const canvas = document.getElementById('nexusCanvas');
+        const ctx = canvas.getContext('2d');
 
-            recognition.onresult = async (event) => {
-                const lastResultIndex = event.results.length - 1;
-                const textoOuvido = event.results[lastResultIndex][0].transcript.trim();
-                console.log("Ouvido:", textoOuvido);
-
-                // Verifica se a palavra de ativação "Nexus" foi dita
-                if (textoOuvido.toLowerCase().includes("nexus")) {
-                    statusText.innerText = "Processando comando...";
-                    outputText.innerText = `Você disse: "${textoOuvido}"`;
-
-                    try {
-                        const response = await fetch(`${RENDER_URL}/api/chat`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ prompt: textoOuvido })
-                        });
-
-                        const data = await response.json();
-
-                        if (data.resposta) {
-                            statusText.innerText = "SISTEMA ONLINE";
-                            outputText.innerText = data.resposta;
-                            falar(data.resposta);
-                        }
-
-                        if (data.jogo) {
-                            gameFrame.srcdoc = data.jogo;
-                        }
-                    } catch (err) {
-                        console.error(err);
-                        statusText.innerText = "Erro de Conexão";
-                        outputText.innerText = "Não foi possível conectar ao servidor no Render.";
-                    }
-                }
-            };
-
-            recognition.onend = () => {
-                recognition.start(); // Mantém o microfone sempre ativo
-            };
-
-            function iniciarVoz() {
-                recognition.start();
-                statusText.innerText = "Escutando... Fale 'Nexus'";
-            }
-        } else {
-            alert("O seu navegador não suporta reconhecimento de voz.");
+        let width, height;
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
         }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Gerar os pontos da esfera (cerca de 3000 pontos)
+        const numPoints = 3000;
+        const points = [];
+        const radius = 180; // Raio da esfera
+
+        for (let i = 0; i < numPoints; i++) {
+            // Distribuição matemática uniforme na esfera (Fibonacci sphere ou distribuição esférica)
+            const phi = Math.acos(-1 + (2 * i) / numPoints);
+            const theta = Math.sqrt(numPoints * Math.PI) * phi;
+
+            const x = radius * Math.cos(theta) * Math.sin(phi);
+            const y = radius * Math.sin(theta) * Math.sin(phi);
+            const z = radius * Math.cos(phi);
+
+            points.push({ x, y, z });
+        }
+
+        let angleX = 0;
+        let angleY = 0;
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.2)'; // Efeito de rasto suave
+            ctx.fillRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height / 2;
+
+            // Rotação contínua da esfera
+            angleX += 0.005;
+            angleY += 0.008;
+
+            const cosX = Math.cos(angleX);
+            const sinX = Math.sin(angleX);
+            const cosY = Math.cos(angleY);
+            const sinY = Math.sin(angleY);
+
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+
+                // Rotação no eixo Y
+                let x1 = p.x * cosY - p.z * sinY;
+                let z1 = p.z * cosY + p.x * sinY;
+
+                // Rotação no eixo X
+                let y2 = p.y * cosX - z1 * sinX;
+                let z2 = z1 * cosX + p.y * sinX;
+
+                // Perspetiva 3D
+                let fov = 400;
+                let scale = fov / (fov + z2);
+                let px = x1 * scale + cx;
+                let py = y2 * scale + cy;
+
+                // Desenhar o ponto branco se estiver à frente
+                if (z2 > -fov) {
+                    let alpha = (z2 + radius) / (2 * radius); // Brilho baseado na profundidade
+                    alpha = Math.max(0.1, Math.min(1, alpha));
+                    
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    let size = scale * 1.5;
+                    ctx.fillRect(px, py, size, size);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // --- VERIFICAÇÃO DE CONEXÃO AO RENDER ---
+        async function verificarConexao() {
+            try {
+                const res = await fetch(`${RENDER_URL}/api/status`);
+                if (res.ok) {
+                    document.getElementById('status').innerText = "NEXUS CORE // LIGADO AO RENDER";
+                    document.getElementById('error-box').style.display = 'none';
+                }
+            } catch (e) {
+                document.getElementById('error-box').style.display = 'block';
+            }
+        }
+
+        verificarConexao();
     </script>
 </body>
 </html>
