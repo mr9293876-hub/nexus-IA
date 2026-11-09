@@ -15,7 +15,6 @@
 
         .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #ffffff; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); }
 
-        /* Dual App em Tela Inteira Real (100% width) */
         .dual-panel { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: #000; transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 50; }
         .dual-panel.active { left: 0; }
         .panel-body { flex: 1; display: flex; flex-direction: column; position: relative; width: 100%; height: 100%; }
@@ -23,7 +22,6 @@
         .close-btn:hover { background: rgba(255,255,255,0.3); }
         iframe, .view-frame { width: 100%; height: 100%; border: none; background: #000; }
 
-        /* Histórico Estilo WhatsApp */
         .chat-log { display: flex; flex-direction: column; gap: 0.8rem; padding: 4rem 2rem 2rem 2rem; overflow-y: auto; height: 100%; background: #020408; }
         .chat-bubble { padding: 0.9rem 1.2rem; border-radius: 12px; max-width: 75%; font-size: 1rem; line-height: 1.4; }
         .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
@@ -33,13 +31,11 @@
 <body>
 
     <div class="workspace">
-        <!-- Esfera 3D de 2000 Partículas Brancas -->
         <div class="sphere-container">
             <canvas id="particleCanvas"></canvas>
-            <div id="statusText" class="status-box">Diga "Nexus" seguido do seu comando (Ex: "Nexus, criar jogo 3D de Minecraft")...</div>
+            <div id="statusText" class="status-box">Diga "Nexus" seguido do que quer criar ou resolver...</div>
         </div>
 
-        <!-- Painel Dual App em Tela Inteira Real -->
         <div id="dualPanel" class="dual-panel">
             <div class="panel-body" id="panelBody">
                 <button class="close-btn" onclick="closePanel()">✕ Fechar Dual App</button>
@@ -48,7 +44,6 @@
     </div>
 
     <script>
-        // Voz Ultron (Calma, profunda e calculista)
         let ultronVoice = null;
         function loadVoices() {
             const voices = window.speechSynthesis.getVoices();
@@ -69,7 +64,6 @@
             }
         }
 
-        // Esfera 3D de 2000 Partículas Brancas
         const canvas = document.getElementById('particleCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -129,7 +123,6 @@
         }
         renderParticles();
 
-        // Escuta Contínua com Wake Word "Nexus"
         let chatHistory = [];
         const statusText = document.getElementById("statusText");
 
@@ -189,7 +182,7 @@
             const panel = document.getElementById("dualPanel");
             const body = document.getElementById("panelBody");
 
-            if (action === 'open_dual_app') {
+            if (action === 'open_dual_app' && data) {
                 panel.classList.add("active");
                 body.innerHTML = `<button class="close-btn" onclick="closePanel()">✕ Fechar Dual App</button><iframe class="view-frame" srcdoc="${data.replace(/"/g, '&quot;')}"></iframe>`;
             } 
