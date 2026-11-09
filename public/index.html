@@ -3,16 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus - AI Assistant</title>
+    <title>Nexus AI Assistant & Dual App Studio</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #050814; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 2rem; overflow: hidden; }
+        body { background: #050814; color: #fff; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 1.5rem; overflow: hidden; }
 
-        .header { font-size: 1.2rem; font-weight: 500; letter-spacing: 1px; color: #8ab4f8; margin-top: 1rem; }
+        .header { font-size: 1.1rem; font-weight: 500; letter-spacing: 1px; color: #8ab4f8; }
 
-        .orb-container { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; }
+        /* Layout Principal com Dual App Oculto/Ativo */
+        .main-container { display: flex; width: 100%; max-width: 900px; flex: 1; gap: 1rem; align-items: center; justify-content: center; transition: all 0.5s ease; }
+        
+        .assistant-side { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; height: 100%; }
+        
         .magic-orb {
-            width: 140px; height: 140px; border-radius: 50%;
+            width: 130px; height: 130px; border-radius: 50%;
             background: radial-gradient(circle, rgba(0,242,254,1) 0%, rgba(79,172,254,0.6) 50%, rgba(0,0,0,0) 80%);
             box-shadow: 0 0 30px rgba(0, 242, 254, 0.5), inset 0 0 20px rgba(255, 255, 255, 0.8);
             animation: pulse-orb 3s infinite alternate ease-in-out;
@@ -22,44 +26,155 @@
             0% { transform: scale(0.95); box-shadow: 0 0 20px rgba(0,242,254,0.4); }
             100% { transform: scale(1.08); box-shadow: 0 0 50px rgba(0,242,254,0.8); }
         }
-        .status-text { margin-top: 1.5rem; font-size: 1.1rem; color: #cbd5e1; font-weight: 300; text-align: center; }
+        .status-text { margin-top: 1.5rem; font-size: 1rem; color: #cbd5e1; font-weight: 300; text-align: center; max-width: 320px; }
 
+        /* Painel Dual App (Estúdio de Jogos) */
+        .dual-app-panel {
+            width: 0px; opacity: 0; pointer-events: none; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; overflow: hidden;
+            display: flex; flex-direction: column; height: 80vh; transition: all 0.5s ease;
+        }
+        .dual-app-panel.active { width: 450px; opacity: 1; pointer-events: auto; padding: 1rem; }
+        .dual-header { font-size: 0.95rem; color: #00f2fe; margin-bottom: 0.5rem; display: flex; justify-content: space-between; align-items: center; }
+        .game-iframe { width: 100%; flex: 1; border: none; border-radius: 10px; background: #000; }
+
+        /* Sobreposição Dinâmica inferior */
         .dynamic-overlay {
             width: 100%; max-width: 400px; background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px; padding: 1rem; display: flex; flex-direction: column; gap: 0.8rem;
+            border-radius: 16px; padding: 0.8rem; display: flex; flex-direction: column; gap: 0.6rem;
             transition: all 0.4s ease; transform: translateY(20px); opacity: 0; pointer-events: none;
+            position: absolute; bottom: 2rem;
         }
         .dynamic-overlay.active { transform: translateY(0); opacity: 1; pointer-events: auto; }
         .card-action {
-            background: rgba(255, 255, 255, 0.08); padding: 0.8rem 1rem; border-radius: 12px;
-            display: flex; align-items: center; justify-content: space-between; font-size: 0.95rem; cursor: pointer;
-            transition: background 0.2s;
+            background: rgba(255, 255, 255, 0.08); padding: 0.6rem 0.8rem; border-radius: 10px;
+            display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; cursor: pointer;
         }
-        .card-action:hover { background: rgba(255, 255, 255, 0.15); }
     </style>
 </head>
 <body>
-    <div class="header">Nexus AI Assistant</div>
 
-    <!-- Círculo Central Fixo -->
-    <div class="orb-container">
-        <div class="magic-orb" onclick="toggleListening()"></div>
-        <div id="statusText" class="status-text">Ouvindo em 2º plano...</div>
+    <div class="header">Nexus AI Core & Dual App</div>
+
+    <div class="main-container">
+        <!-- Lado da Assistente Principal -->
+        <div class="assistant-side">
+            <div class="magic-orb" onclick="toggleOverlay()"></div>
+            <div id="statusText" class="status-text">Ouvindo em 2º plano... Diga "criar jogo" ou faça um pedido.</div>
+        </div>
+
+        <!-- Lado do Dual App (Estúdio de Jogos) -->
+        <div id="dualAppPanel" class="dual-app-panel">
+            <div class="dual-header">
+                <span>🎮 Dual App (Game Studio - Clean Build)</span>
+                <span style="cursor:pointer;" onclick="toggleDualApp(false)">✕</span>
+            </div>
+            <iframe id="gameFrame" class="game-iframe"></iframe>
+        </div>
     </div>
 
-    <!-- Sobreposição Dinâmica de Apps -->
+    <!-- Sobreposição Dinâmica -->
     <div id="dynamicOverlay" class="dynamic-overlay">
         <div class="card-action" onclick="executeAction('instagram')">
             <span>📱 Verificar DMs do Instagram</span>
             <span>➔</span>
         </div>
-        <div class="card-action" onclick="executeAction('spotify')">
-            <span>🎵 Tocar música no Spotify</span>
+        <div class="card-action" onclick="toggleDualApp(true)">
+            <span>🎮 Abrir Dual App Studio</span>
             <span>➔</span>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Sistema de Voz (Text-to-Speech) para a assistente falar as respostas
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); // Para fala anterior
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 1.1;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Reconhecimento de Voz em 2º plano
+        document.addEventListener("DOMContentLoaded", () => {
+            const statusText = document.getElementById("statusText");
+            const dynamicOverlay = document.getElementById("dynamicOverlay");
+
+            let recognition;
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'pt-BR';
+                recognition.continuous = true;
+                recognition.interimResults = false;
+
+                recognition.onresult = async (event) => {
+                    const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                    statusText.innerText = `Processando: "${transcript}"`;
+                    await sendCommandToServer(transcript);
+                };
+
+                try {
+                    recognition.start();
+                    statusText.innerText = "Ouvindo em 2º plano...";
+                } catch (e) {
+                    console.log("Microfone ativo.");
+                }
+            }
+        });
+
+        function toggleOverlay() {
+            const overlay = document.getElementById("dynamicOverlay");
+            overlay.classList.toggle("active");
+        }
+
+        function toggleDualApp(show, htmlContent = null) {
+            const panel = document.getElementById("dualAppPanel");
+            if (show) {
+                panel.classList.add("active");
+                if (htmlContent) {
+                    const iframe = document.getElementById("gameFrame");
+                    iframe.srcdoc = htmlContent;
+                }
+            } else {
+                panel.classList.remove("active");
+            }
+        }
+
+        async function sendCommandToServer(commandText) {
+            const statusText = document.getElementById("statusText");
+
+            try {
+                const response = await fetch('/api/assistant/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: commandText })
+                });
+
+                const data = await response.json();
+                
+                if (data.status === "success") {
+                    statusText.innerText = data.response;
+                    speak(data.response); // A assistente fala a resposta em voz alta!
+
+                    // Se a IA gerou um jogo ou exigiu abrir o dual app
+                    if (data.action_required === 'open_dual_app' && data.game_code) {
+                        toggleDualApp(true, data.game_code);
+                    }
+                } else {
+                    statusText.innerText = "Erro ao processar comando.";
+                }
+            } catch (error) {
+                statusText.innerText = "Falha na conexão com o Render.";
+            }
+        }
+
+        function executeAction(type) {
+            alert("Acedendo a integração nativa de: " + type);
+        }
+    </script>
 </body>
 </html>
