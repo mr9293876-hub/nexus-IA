@@ -3,65 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Core Engine</title>
+    <title>Nexus Core</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; color: #fff; display: flex; }
+        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; display: flex; }
 
-        /* INTERFACE DUAL-CANVAS ORIGINAL */
-        #left-panel { flex: 1; height: 100%; position: relative; border-right: 1px solid #151515; }
-        #right-panel { flex: 1; height: 100%; background: #030305; display: flex; flex-direction: column; position: relative; }
+        /* DUAL INTERFACE: Ocupa a tela toda dividida em dois lados perfeitos */
+        #left-screen { flex: 1; height: 100%; position: relative; background: #000; }
+        #right-screen { flex: 1; height: 100%; background: #020205; position: relative; border-left: 1px solid #111; }
 
-        canvas { display: block; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        /* Canvas da Esfera 3D de 3000 pontos */
+        canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
-        #ui-layer {
-            position: relative; z-index: 10; display: flex; flex-direction: column; justify-content: space-between; height: 100%; padding: 25px; pointer-events: none;
-        }
-
-        .status-tag { background: rgba(0, 0, 0, 0.85); border: 1px solid #222; padding: 10px 16px; border-radius: 4px; font-size: 12px; letter-spacing: 1px; width: fit-content; }
-        .btn-mic { pointer-events: auto; background: #00f3ff; color: #000; font-weight: bold; padding: 10px 18px; border: none; border-radius: 3px; cursor: pointer; font-family: monospace; margin-top: 10px; }
-
-        #sandbox-frame { width: 100%; height: 100%; border: none; background: #000; }
-        
-        .mode-bar { position: absolute; top: 10px; right: 10px; z-index: 20; display: flex; gap: 8px; }
-        .mode-btn { background: #111; color: #00f3ff; border: 1px solid #00f3ff; padding: 6px 12px; font-size: 11px; cursor: pointer; font-family: monospace; }
+        /* Sandbox / Segunda Interface para Jogos, NPC e IA */
+        iframe { width: 100%; height: 100%; border: none; background: #000; }
     </style>
 </head>
 <body>
 
-    <!-- PAINEL DA ESQUERDA: ESFERA 3D REATIVA E VOZ -->
-    <div id="left-panel">
-        <canvas id="sphereCanvas"></canvas>
-        <div id="ui-layer">
-            <div>
-                <div class="status-tag" id="status-display">NEXUS CORE // STANDBY (AGUARDANDO PALAVRA CHAVE)</div>
-                <button class="btn-mic" onclick="ativarEscutaEmSegundoPlano()">Ativar 2º Plano (Voz)</button>
-            </div>
-            <div class="status-tag" id="log-display">Diga "Nexus" + seu comando. O sistema aguardará a conclusão da fala.</div>
-        </div>
+    <!-- LADO ESQUERDO: A Esfera 3D de 3000 pontos e a Escuta de Voz em 2º plano -->
+    <div id="left-screen">
+        <canvas id="nexusCanvas"></canvas>
     </div>
 
-    <!-- PAINEL DA DIREITA: SECONDARY INTERFACE (SANDBOX / DEBUG / NPC) -->
-    <div id="right-panel">
-        <div class="mode-bar">
-            <button class="mode-btn" onclick="definirModo('normal')">SANDBOX</button>
-            <button class="mode-btn" onclick="definirModo('npc')">MODO NPC</button>
-            <button class="mode-btn" onclick="definirModo('debug')">DEBUG / CORRETOR</button>
-        </div>
-        <iframe id="sandbox-frame" srcdoc="<h4 style='color:#333; text-align:center; margin-top:45%; font-family:monospace;'>[ SECONDARY INTERFACE ONLINE ]</h4>"></iframe>
+    <!-- LADO DIREITO: A Segunda Interface (Painel de Jogos / NPC / IA Correctora) -->
+    <div id="right-screen">
+        <iframe id="sandboxFrame" srcdoc="<h3 style='color:#222; text-align:center; margin-top:45%; font-family:monospace;'>[ N E X U S - S A N D B O X ]</h3>"></iframe>
     </div>
 
     <script>
         const RENDER_URL = 'https://nexus-ia-syc5.onrender.com';
-        let modoAtual = "normal";
 
-        function definirModo(modo) {
-            modoAtual = modo;
-            document.getElementById('log-display').innerText = `Modo alterado para: ${modo.toUpperCase()}`;
-        }
-
-        // --- ANIMAÇÃO REATIVA DA ESFERA 3D (3000 PONTOS) ---
-        const canvas = document.getElementById('sphereCanvas');
+        // --- ANIMAÇÃO DA ESFERA 3D (3000 PONTOS) ---
+        const canvas = document.getElementById('nexusCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
 
@@ -74,147 +48,127 @@
 
         const numPoints = 3000;
         const points = [];
-        let baseRadius = 150;
-        let currentRadius = 150;
+        const radius = 170;
 
         for (let i = 0; i < numPoints; i++) {
             const phi = Math.acos(-1 + (2 * i) / numPoints);
             const theta = Math.sqrt(numPoints * Math.PI) * phi;
             points.push({
-                x: Math.cos(theta) * Math.sin(phi),
-                y: Math.sin(theta) * Math.sin(phi),
-                z: Math.cos(phi)
+                x: radius * Math.cos(theta) * Math.sin(phi),
+                y: radius * Math.sin(theta) * Math.sin(phi),
+                z: radius * Math.cos(phi)
             });
         }
 
         let angleX = 0, angleY = 0;
-        let speedMultiplier = 1;
-        let state = "idle"; // idle, listening, speaking
+        let speed = 1;
+        let ballState = "idle"; // idle, listening, speaking
 
-        function renderSphere() {
+        function animate() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
             ctx.fillRect(0, 0, width, height);
 
             const cx = width / 2;
             const cy = height / 2;
 
-            // Ajustes reativos conforme o estado da IA
-            if (state === "listening") {
-                speedMultiplier = 3.5;
-                currentRadius = baseRadius + Math.sin(Date.now() * 0.01) * 15;
-            } else if (state === "speaking") {
-                speedMultiplier = 2.0;
-                currentRadius = baseRadius + Math.sin(Date.now() * 0.02) * 25;
-            } else {
-                speedMultiplier = 1.0;
-                currentRadius = baseRadius;
-            }
+            // Reatividade visual da bola ao falar ou ouvir
+            if (ballState === "listening") speed = 3.5;
+            else if (ballState === "speaking") speed = 2.2;
+            else speed = 1;
 
-            angleX += 0.003 * speedMultiplier;
-            angleY += 0.005 * speedMultiplier;
+            angleX += 0.004 * speed;
+            angleY += 0.007 * speed;
 
             const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
             const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
 
             for (let i = 0; i < points.length; i++) {
                 let p = points[i];
-                let px = p.x * currentRadius;
-                let py = p.y * currentRadius;
-                let pz = p.z * currentRadius;
-
-                let x1 = px * cosY - pz * sinY;
-                let z1 = pz * cosY + px * sinY;
-                let y2 = py * cosX - z1 * sinX;
-                let z2 = z1 * cosX + py * sinX;
+                let x1 = p.x * cosY - p.z * sinY;
+                let z1 = p.z * cosY + p.x * sinY;
+                let y2 = p.y * cosX - z1 * sinX;
+                let z2 = z1 * cosX + p.y * sinX;
 
                 let fov = 400;
                 let scale = fov / (fov + z2);
-                let screenX = x1 * scale + cx;
-                let screenY = y2 * scale + cy;
+                let px = x1 * scale + cx;
+                let py = y2 * scale + cy;
 
                 if (z2 > -fov) {
-                    let alpha = (z2 + currentRadius) / (2 * currentRadius);
+                    let alpha = (z2 + radius) / (2 * radius);
                     alpha = Math.max(0.1, Math.min(1, alpha));
                     
-                    ctx.fillStyle = state === "listening" ? `rgba(0, 243, 255, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-                    ctx.fillRect(screenX, screenY, scale * 1.4, scale * 1.4);
+                    // Fica azul quando ouve, branco normal no resto
+                    ctx.fillStyle = ballState === "listening" ? `rgba(0, 243, 255, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillRect(px, py, scale * 1.5, scale * 1.5);
                 }
             }
-            requestAnimationFrame(renderSphere);
+            requestAnimationFrame(animate);
         }
-        renderSphere();
+        animate();
 
-        // --- SÍNTESE DE VOZ MASCULINA ---
+        // --- SISTEMA DE VOZ MASCULINA ---
         function falarVozMasculina(texto) {
             const synth = window.speechSynthesis;
             const utter = new SpeechSynthesisUtterance(texto);
             utter.lang = 'pt-BR';
 
             const voices = synth.getVoices();
-            // Seleciona voz masculina disponível
-            const maleVoice = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('ricardo') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('helio')));
-            if (maleVoice) utter.voice = maleVoice;
+            const vozMasculina = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('ricardo') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('antonio')));
+            if (vozMasculina) utter.voice = vozMasculina;
 
-            utter.onstart = () => { state = "speaking"; };
-            utter.onend = () => { state = "idle"; };
+            utter.onstart = () => { ballState = "speaking"; };
+            utter.onend = () => { ballState = "idle"; };
 
             synth.speak(utter);
         }
 
-        // --- RECONHECIMENTO EM 2º PLANO (ESPERA CONCLUIR A FALA) ---
+        // --- RECONHECIMENTO DE VOZ EM 2º PLANO (SÓ PROCESSA APÓS PARAR DE FALAR) ---
         window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (window.SpeechRecognition) {
             const recognition = new SpeechRecognition();
             recognition.continuous = true;
-            recognition.interimResults = false; // Garante processamento APENAS ao terminar de falar
+            recognition.interimResults = false; // Aguarda o utilizador terminar a frase toda
             recognition.lang = 'pt-BR';
 
-            recognition.onstart = () => {
-                document.getElementById('status-display').innerText = "NEXUS CORE // ESCUTA CONTINUA ATIVA";
-            };
-
             recognition.onresult = async (event) => {
-                const lastIndex = event.results.length - 1;
-                const comandoCompleto = event.results[lastIndex][0].transcript.trim();
+                const ultimo = event.results.length - 1;
+                const frase = event.results[ultimo][0].transcript.trim();
 
-                // Só processa se a palavra de ativação "Nexus" for falada
-                if (comandoCompleto.toLowerCase().includes("nexus")) {
-                    state = "listening";
-                    document.getElementById('status-display').innerText = "NEXUS CORE // PROCESSANDO COMANDO...";
-                    document.getElementById('log-display').innerText = `Comando capturado: "${comandoCompleto}"`;
+                // Só ativa se disser a palavra "Nexus"
+                if (frase.toLowerCase().includes("nexus")) {
+                    ballState = "listening";
 
                     try {
-                        const res = await fetch(`${RENDER_URL}/api/chat`, {
+                        const respostaServidor = await fetch(`${RENDER_URL}/api/chat`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ prompt: comandoCompleto, modo: modoAtual })
+                            body: JSON.stringify({ prompt: frase })
                         });
-                        const data = await res.json();
+                        const dados = await respostaServidor.json();
 
-                        if (data.resposta) {
-                            document.getElementById('status-display').innerText = "NEXUS CORE // OPERACIONAL";
-                            document.getElementById('log-display').innerText = data.resposta;
-                            falarVozMasculina(data.resposta);
+                        if (dados.resposta) {
+                            falarVozMasculina(dados.resposta);
                         }
-                        if (data.jogo) {
-                            document.getElementById('sandbox-frame').srcdoc = data.jogo;
+                        if (dados.jogo) {
+                            document.getElementById('sandboxFrame').srcdoc = dados.jogo;
                         }
                     } catch (e) {
-                        state = "idle";
-                        document.getElementById('status-display').innerText = "ERRO DE CONEXAO";
+                        ballState = "idle";
                     }
                 }
             };
 
             recognition.onend = () => {
-                recognition.start(); // Reconexão automática para escuta contínua em 2º plano
+                recognition.start(); // Mantém a escuta em segundo plano permanentemente
             };
 
-            function ativarEscutaEmSegundoPlano() {
+            // Inicia automaticamente a escuta mal a página carrega
+            window.addEventListener('load', () => {
                 window.speechSynthesis.getVoices();
                 recognition.start();
-            }
+            });
         }
     </script>
 </body>
