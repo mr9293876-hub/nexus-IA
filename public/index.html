@@ -3,205 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus Core</title>
+    <title>Nexus Core AI</title>
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: #000000; color: #fff; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-        .workspace { display: flex; flex: 1; position: relative; overflow: hidden; }
-
-        .sphere-container { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; width: 100%; height: 100%; }
-        canvas#particleCanvas { position: absolute; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-
-        .status-box { z-index: 2; position: absolute; bottom: 2.5rem; background: rgba(5, 5, 5, 0.85); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 0.9rem 1.8rem; border-radius: 30px; font-size: 0.95rem; color: #ffffff; text-align: center; max-width: 85%; box-shadow: 0 8px 32px rgba(0,0,0,0.8); }
-
-        /* Dual App em Tela Inteira */
-        .dual-panel { position: absolute; top: 0; left: 100%; width: 100%; height: 100%; background: #000; transition: left 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; z-index: 50; }
-        .dual-panel.active { left: 0; }
-        .panel-body { flex: 1; display: flex; flex-direction: column; position: relative; width: 100%; height: 100%; }
-        .close-btn { position: absolute; top: 20px; right: 25px; z-index: 60; background: rgba(255,255,255,0.2); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
-        .close-btn:hover { background: rgba(255,255,255,0.4); }
-        iframe, .view-frame { width: 100%; height: 100%; border: none; background: #000; }
-
-        .chat-log { display: flex; flex-direction: column; gap: 0.8rem; padding: 4rem 2rem 2rem 2rem; overflow-y: auto; height: 100%; background: #020408; }
-        .chat-bubble { padding: 0.9rem 1.2rem; border-radius: 12px; max-width: 75%; font-size: 1rem; line-height: 1.4; }
-        .chat-bubble.user { background: #005c4b; align-self: flex-end; color: #fff; }
-        .chat-bubble.ai { background: #202c33; align-self: flex-start; color: #e9edef; border: 1px solid rgba(255,255,255,0.05); }
+        body { margin: 0; background: #050508; color: #fff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        #ai-panel { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-right: 1px solid #1a1a2e; position: relative; }
+        #sandbox-panel { flex: 1; background: #0a0a10; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .avatar-box { width: 200px; height: 200px; border-radius: 50%; border: 3px solid #00f3ff; box-shadow: 0 0 30px #00f3ff; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 15px #00f3ff; } 50% { box-shadow: 0 0 35px #00f3ff; } 100% { box-shadow: 0 0 15px #00f3ff; } }
+        #status-text { margin-top: 20px; font-size: 1.2rem; color: #00f3ff; text-transform: uppercase; letter-spacing: 2px; }
+        #output-text { margin: 15px; text-align: center; max-width: 80%; font-size: 1rem; color: #ccc; }
+        iframe { width: 100%; height: 100%; border: none; }
+        .btn-talk { background: #00f3ff; color: #000; font-weight: bold; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-    <div class="workspace">
-        <div class="sphere-container">
-            <canvas id="particleCanvas"></canvas>
-            <div id="statusText" class="status-box">Diga "Nexus" seguido do seu comando (Ex: "Nexus, criar jogo da cobrinha")...</div>
+    <div id="ai-panel">
+        <div class="avatar-box">
+            <h1 style="color:#00f3ff; font-family: monospace;">NEXUS</h1>
         </div>
+        <div id="status-text">Aguardando comando...</div>
+        <div id="output-text">Diga "Nexus" seguido do seu pedido (ex: "Nexus cria um jogo").</div>
+        <button class="btn-talk" onclick="iniciarVoz()">Ativar Escuta Continua</button>
+    </div>
 
-        <div id="dualPanel" class="dual-panel">
-            <div class="panel-body" id="panelBody">
-                <button class="close-btn" onclick="closePanel()">✕ Fechar Dual App</button>
-            </div>
-        </div>
+    <div id="sandbox-panel">
+        <iframe id="game-frame" srcdoc="<h2 style='color:#555; text-align:center; margin-top:40%; font-family:sans-serif;'>Painel Sandbox / Jogos</h2>"></iframe>
     </div>
 
     <script>
-        // Voz Ultron (Grave e pausada)
-        let ultronVoice = null;
-        function loadVoices() {
-            const voices = window.speechSynthesis.getVoices();
-            ultronVoice = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('google português') || v.name.toLowerCase().includes('lucas') || v.name.toLowerCase().includes('daniel'))) || voices.find(v => v.lang.includes('pt')) || voices[0];
-        }
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-        loadVoices();
+        const RENDER_URL = 'https://nexus-ia-syc5.onrender.com';
+        const statusText = document.getElementById('status-text');
+        const outputText = document.getElementById('output-text');
+        const gameFrame = document.getElementById('game-frame');
 
-        function speak(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                if (ultronVoice) utterance.voice = ultronVoice;
-                utterance.lang = 'pt-BR';
-                utterance.pitch = 0.75;
-                utterance.rate = 0.95;
-                window.speechSynthesis.speak(utterance);
-            }
+        // Configuração de Sintese de Voz (Falar)
+        function falar(texto) {
+            const synth = window.speechSynthesis;
+            const utterThis = new SpeechSynthesisUtterance(texto);
+            utterThis.lang = 'pt-BR';
+            synth.speak(utterThis);
         }
 
-        // Esfera de 2000 Partículas Brancas
-        const canvas = document.getElementById('particleCanvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        function resize() {
-            width = canvas.width = canvas.parentElement.clientWidth;
-            height = canvas.height = canvas.parentElement.clientHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        const numParticles = 2000;
-        const particles = [];
-        let sphereRadius = 150;
-        let rotationAngle = 0;
-        let isSpeakingOrListening = false;
-
-        for (let i = 0; i < numParticles; i++) {
-            const theta = Math.acos(Math.random() * 2 - 1);
-            const phi = Math.random() * Math.PI * 2;
-            particles.push({
-                ox: sphereRadius * Math.sin(theta) * Math.cos(phi),
-                oy: sphereRadius * Math.sin(theta) * Math.sin(phi),
-                oz: sphereRadius * Math.cos(theta),
-                size: Math.random() * 1.4 + 0.5
-            });
-        }
-
-        function renderParticles() {
-            ctx.clearRect(0, 0, width, height);
-            const cx = width / 2;
-            const cy = height / 2;
-            
-            rotationAngle += isSpeakingOrListening ? 0.035 : 0.005;
-            let currentRadius = sphereRadius + (isSpeakingOrListening ? Math.sin(Date.now() * 0.012) * 35 : 0);
-
-            particles.forEach(p => {
-                let x = p.ox * (currentRadius / sphereRadius);
-                let y = p.oy * (currentRadius / sphereRadius);
-                let z = p.oz * (currentRadius / sphereRadius);
-
-                let cos = Math.cos(rotationAngle), sin = Math.sin(rotationAngle);
-                let x1 = x * cos - z * sin;
-                let z1 = z * cos + x * sin;
-
-                let fov = 380;
-                let scale = fov / (fov + z1);
-                let px = x1 * scale + cx;
-                let py = y * scale + cy;
-
-                let alpha = (z1 + sphereRadius) / (sphereRadius * 2);
-                alpha = Math.max(0.15, alpha * (isSpeakingOrListening ? 0.95 : 0.5));
-
-                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-                ctx.fillRect(px, py, p.size * scale, p.size * scale);
-            });
-            requestAnimationFrame(renderParticles);
-        }
-        renderParticles();
-
-        // Escuta Contínua
-        let chatHistory = [];
-        const statusText = document.getElementById("statusText");
-
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // Reconhecimento de Voz (Ouvir)
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        
+        if (window.SpeechRecognition) {
             const recognition = new SpeechRecognition();
-            recognition.lang = 'pt-BR';
             recognition.continuous = true;
+            recognition.lang = 'pt-BR';
             recognition.interimResults = false;
 
             recognition.onresult = async (event) => {
-                const transcript = event.results[event.results.length - 1][0].transcript.trim();
+                const lastResultIndex = event.results.length - 1;
+                const textoOuvido = event.results[lastResultIndex][0].transcript.trim();
+                console.log("Ouvido:", textoOuvido);
 
-                if (transcript.toLowerCase().includes('nexus') || transcript.toLowerCase().includes('criar') || transcript.toLowerCase().includes('conserta')) {
-                    statusText.innerText = `Comando: "${transcript}"`;
-                    addChat(transcript, 'user');
-                    await processCommand(transcript);
+                // Verifica se a palavra de ativação "Nexus" foi dita
+                if (textoOuvido.toLowerCase().includes("nexus")) {
+                    statusText.innerText = "Processando comando...";
+                    outputText.innerText = `Você disse: "${textoOuvido}"`;
+
+                    try {
+                        const response = await fetch(`${RENDER_URL}/api/chat`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ prompt: textoOuvido })
+                        });
+
+                        const data = await response.json();
+
+                        if (data.resposta) {
+                            statusText.innerText = "SISTEMA ONLINE";
+                            outputText.innerText = data.resposta;
+                            falar(data.resposta);
+                        }
+
+                        if (data.jogo) {
+                            gameFrame.srcdoc = data.jogo;
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        statusText.innerText = "Erro de Conexão";
+                        outputText.innerText = "Não foi possível conectar ao servidor no Render.";
+                    }
                 }
             };
 
             recognition.onend = () => {
-                try { recognition.start(); } catch (e) {}
+                recognition.start(); // Mantém o microfone sempre ativo
             };
 
-            try { recognition.start(); } catch (e) { console.log("Mic ativo"); }
-        }
-
-        function addChat(text, sender) {
-            chatHistory.push({ text, sender });
-        }
-
-        async function processCommand(cmd) {
-            isSpeakingOrListening = true;
-            try {
-                const res = await fetch('/api/assistant/command', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ command: cmd })
-                });
-                const data = await res.json();
-                
-                if (data.status === 'success') {
-                    statusText.innerText = data.response;
-                    speak(data.response);
-                    addChat(data.response, 'ai');
-                    handleActions(data.action_required, data.data);
-                }
-            } catch (err) {
-                statusText.innerText = "Erro de conexão.";
-            } finally {
-                setTimeout(() => { isSpeakingOrListening = false; }, 3500);
+            function iniciarVoz() {
+                recognition.start();
+                statusText.innerText = "Escutando... Fale 'Nexus'";
             }
-        }
-
-        function handleActions(action, data) {
-            const panel = document.getElementById("dualPanel");
-            const body = document.getElementById("panelBody");
-
-            if (action === 'open_dual_app' && data) {
-                panel.classList.add("active");
-                body.innerHTML = `<button class="close-btn" onclick="closePanel()">✕ Fechar Dual App</button><iframe class="view-frame" srcdoc="${data.replace(/"/g, '&quot;')}"></iframe>`;
-            } 
-            else if (action === 'open_history') {
-                panel.classList.add("active");
-                let html = '<button class="close-btn" onclick="closePanel()">✕ Fechar Dual App</button><div class="chat-log">';
-                chatHistory.forEach(c => {
-                    html += `<div class="chat-bubble ${c.sender}">${c.text}</div>`;
-                });
-                html += '</div>';
-                body.innerHTML = html;
-            }
-        }
-
-        function closePanel() {
-            document.getElementById("dualPanel").classList.remove("active");
+        } else {
+            alert("O seu navegador não suporta reconhecimento de voz.");
         }
     </script>
 </body>
