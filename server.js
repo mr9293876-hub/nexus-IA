@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Inicializa a API do Gemini com a chave de ambiente
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
 
 app.post('/api/nexus', async (req, res) => {
@@ -38,9 +39,10 @@ app.post('/api/nexus', async (req, res) => {
         }
         else {
             try {
+                // Inteligência real do Gemini em segundo plano
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: `Atua como Jarvis do sistema Nexus. O utilizador ordenou: "${prompt}". Responde de forma direta e tática em Português.`
+                    contents: `Atua como o núcleo Jarvis do sistema Nexus. O utilizador ordenou: "${prompt}". Responde de forma direta e tática em Português.`
                 });
 
                 respostaVoz = "Comando executado pela inteligência central.";
@@ -96,15 +98,15 @@ app.post('/api/nexus', async (req, res) => {
                 }
                 actionType = "open";
             } catch (err) {
-                console.error("Erro na IA:", err);
-                respostaVoz = "Erro ao processar com a inteligência artificial.";
+                console.error("Erro na API do Gemini:", err);
+                respostaVoz = "Erro ao comunicar com o modelo de inteligência artificial.";
             }
         }
 
         res.json({ resposta: respostaVoz, painel: painelHtml, action: actionType });
     } catch (e) {
         console.error(e);
-        res.status(500).json({ erro: "Erro interno." });
+        res.status(500).json({ erro: "Erro interno no servidor." });
     }
 });
 
