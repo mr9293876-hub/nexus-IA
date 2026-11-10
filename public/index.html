@@ -8,15 +8,15 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; display: flex; }
 
-        /* Esquerda: Bola 3D que ocupa o fundo total */
+        /* Esfera 3D centrada no ecrã inteiro */
         #main-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 1; }
         canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
-        /* Painel Dual Lateral (Abre inicialmente em metade da tela à direita) */
-        #dual-overlay { position: fixed; top: 0; right: -50%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease-in-out, width 0.4s ease-in-out; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
+        /* Painel Dual Lateral / Overlay */
+        #dual-overlay { position: fixed; top: 0; right: -100%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease-in-out, width 0.4s ease-in-out; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
         iframe { width: 100%; height: 100%; border: none; background: #000; }
 
-        /* Teclado Virtual Oculto */
+        /* Teclado Virtual */
         #virtual-keyboard { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(5,5,15,0.95); border: 1px solid #00f3ff; padding: 10px; display: none; z-index: 200; }
         #virtual-keyboard input { background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px; width: 280px; font-family: monospace; }
     </style>
@@ -26,11 +26,10 @@
     <div id="main-container">
         <canvas id="nexusCanvas"></canvas>
         <div id="virtual-keyboard">
-            <input type="text" id="manualInput" placeholder="Comando manual..." onkeypress="handleKey(event)">
+            <input type="text" id="manualInput" placeholder="Digite o comando para o Nexus..." onkeypress="handleKey(event)">
         </div>
     </div>
 
-    <!-- Painel Dual -->
     <div id="dual-overlay">
         <iframe id="dualFrame"></iframe>
     </div>
@@ -38,7 +37,7 @@
     <script>
         const CLOUD_URL = 'https://nexus-ia-syc5.onrender.com';
 
-        // --- ESFERA 3D (3000 PONTOS) ---
+        // --- ESFERA 3D (3000 PONTOS CENTRADA) ---
         const canvas = document.getElementById('nexusCanvas');
         const ctx = canvas.getContext('2d');
         let width, height;
@@ -124,7 +123,7 @@
             synth.speak(utter);
         }
 
-        // --- CONTROLOS DO PAINEL DUAL POR VOZ ---
+        // --- CONTROLO DO PAINEL DUAL ---
         function abrirDual(conteudoHtml) {
             const overlay = document.getElementById('dual-overlay');
             if (conteudoHtml) document.getElementById('dualFrame').srcdoc = conteudoHtml;
@@ -157,7 +156,7 @@
             }
         }
 
-        // --- COMUNICAÇÃO COM A NUVEM ---
+        // --- ENVIO DO COMANDO PARA A NUVEM ---
         async function enviarComando(frase) {
             ballState = "listening";
             try {
@@ -181,11 +180,11 @@
                 }
             } catch (e) {
                 ballState = "idle";
-                console.error("Erro:", e);
+                console.error("Erro de ligação:", e);
             }
         }
 
-        // --- RECONHECIMENTO DE VOZ (Exige rigorosamente 'Nexus') ---
+        // --- RECONHECIMENTO DE VOZ MELHORADO (Aguarda a frase completa) ---
         window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (window.SpeechRecognition) {
@@ -194,12 +193,18 @@
             recognition.interimResults = false;
             recognition.lang = 'pt-BR';
 
+            let timeoutVoz;
+
             recognition.onresult = (event) => {
                 const ultimo = event.results.length - 1;
                 const frase = event.results[ultimo][0].transcript.trim();
 
                 if (frase.toLowerCase().includes("nexus")) {
-                    enviarComando(frase);
+                    clearTimeout(timeoutVoz);
+                    // Aguarda 800ms de silêncio para garantir que disseste a frase inteira antes de enviar
+                    timeoutVoz = setTimeout(() => {
+                        enviarComando(frase);
+                    }, 800);
                 }
             };
 
