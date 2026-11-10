@@ -8,45 +8,32 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
 
-        /* Esfera 3D ocupa o ecrã inteiro perfeitamente ao centro */
+        /* Bola 3D ocupa o ecrã inteiro perfeitamente ao centro */
         #main-container { width: 100%; height: 100%; position: relative; display: flex; align-items: center; justify-content: center; background: #000; }
         canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
 
-        /* Painel Dual Fullscreen (inicialmente oculto) */
-        #dual-fullscreen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #010108; z-index: 100; display: none; flex-direction: column; }
+        /* Painel Dual Lateral / Overlay (abre apenas por comando) */
+        #dual-overlay { position: fixed; top: 0; right: -50%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease-in-out; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
         iframe { width: 100%; height: 100%; border: none; background: #000; }
 
-        /* Botões de Acesso Rápido na Tela Inicial */
-        #hud-controls { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; z-index: 10; }
-        .hud-btn { background: rgba(0, 243, 255, 0.1); border: 1px solid #00f3ff; color: #00f3ff; padding: 10px 18px; font-size: 12px; cursor: pointer; letter-spacing: 1px; transition: 0.3s; }
-        .hud-btn:hover { background: #00f3ff; color: #000; box-shadow: 0 0 15px rgba(0,243,255,0.6); }
-
         /* Teclado Virtual Oculto */
-        #virtual-keyboard { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: rgba(5,5,15,0.95); border: 1px solid #00f3ff; padding: 10px; display: none; z-index: 20; }
-        #virtual-keyboard input { background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px; width: 250px; font-family: monospace; }
+        #virtual-keyboard { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(5,5,15,0.95); border: 1px solid #00f3ff; padding: 10px; display: none; z-index: 200; }
+        #virtual-keyboard input { background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px; width: 280px; font-family: monospace; }
     </style>
 </head>
 <body>
 
-    <!-- ECRÃ PRINCIPAL COM A BOLA 3D CENTRADA -->
     <div id="main-container">
         <canvas id="nexusCanvas"></canvas>
         
-        <!-- Botões de Acesso Rápido na Tela Inicial -->
-        <div id="hud-controls">
-            <button class="hud-btn" onclick="toggleKeyboard()">[ TECLADO ]</button>
-            <button class="hud-btn" onclick="executarComandoManual('Nexus conectar Instagram')">[ INSTAGRAM ]</button>
-            <button class="hud-btn" onclick="executarComandoManual('Nexus criar jogo')">[ MODO DUAL ]</button>
-        </div>
-
-        <!-- Teclado Virtual Integrado -->
+        <!-- Teclado Virtual acionado por voz -->
         <div id="virtual-keyboard">
-            <input type="text" id="manualInput" placeholder="Digite comando para o Nexus..." onkeypress="handleKey(event)">
+            <input type="text" id="manualInput" placeholder="Comando manual para o Nexus..." onkeypress="handleKey(event)">
         </div>
     </div>
 
-    <!-- ECRÃ DUAL FULLSCREEN (Cobre tudo sem apagar a bola por trás) -->
-    <div id="dual-fullscreen">
+    <!-- Painel Dual Lateral -->
+    <div id="dual-overlay">
         <iframe id="dualFrame"></iframe>
     </div>
 
@@ -139,14 +126,14 @@
             synth.speak(utter);
         }
 
-        // --- CONTROLAR O ECRÃ DUAL ---
+        // --- CONTROLO DO PAINEL DUAL ---
         function abrirDual(conteudoHtml) {
             document.getElementById('dualFrame').srcdoc = conteudoHtml;
-            document.getElementById('dual-fullscreen').style.display = 'flex';
+            document.getElementById('dual-overlay').style.right = '0';
         }
 
         function fecharDual() {
-            document.getElementById('dual-fullscreen').style.display = 'none';
+            document.getElementById('dual-overlay').style.right = '-50%';
         }
 
         function toggleKeyboard() {
@@ -157,7 +144,7 @@
 
         function handleKey(e) {
             if(e.key === 'Enter') {
-                executarComandoManual(e.target.value);
+                enviarComando(e.target.value);
                 e.target.value = '';
                 toggleKeyboard();
             }
@@ -178,7 +165,7 @@
 
                 if (dados.action === "keyboard") {
                     toggleKeyboard();
-                } else if (dados.action === "dual_fullscreen" && dados.painel) {
+                } else if (dados.action === "dual_open" && dados.painel) {
                     abrirDual(dados.painel);
                 }
             } catch (e) {
@@ -187,11 +174,7 @@
             }
         }
 
-        function executarComandoManual(texto) {
-            enviarComando(texto);
-        }
-
-        // --- RECONHECIMENTO DE VOZ RIGOROSO (Exige a palavra 'Nexus') ---
+        // --- RECONHECIMENTO DE VOZ (Exige rigorosamente a palavra 'Nexus') ---
         window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (window.SpeechRecognition) {
@@ -204,7 +187,7 @@
                 const ultimo = event.results.length - 1;
                 const frase = event.results[ultimo][0].transcript.trim();
 
-                // Regra estricta: só aciona se disser a palavra 'nexus'
+                // Só processa se disser claramente "Nexus" seguido do comando
                 if (frase.toLowerCase().includes("nexus")) {
                     enviarComando(frase);
                 }

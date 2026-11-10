@@ -11,7 +11,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.post('/api/nexus', async (req, res) => {
     try {
         const { prompt } = req.body;
-        console.log("[Nexus Core] Comando:", prompt);
+        console.log("[Nexus Core] Comando de voz recebido:", prompt);
 
         if (!prompt) return res.status(400).json({ erro: "Comando vazio." });
 
@@ -20,46 +20,47 @@ app.post('/api/nexus', async (req, res) => {
         let painelHtml = "";
         let actionType = "none";
 
-        // Abrir Teclado / Ferramentas
+        // Comando de Voz: Teclado
         if (t.includes("teclado") || t.includes("abrir teclado")) {
-            respostaVoz = "Abrindo teclado virtual.";
+            respostaVoz = "A abrir painel de teclado virtual.";
             actionType = "keyboard";
         }
-        // Conectar a Redes (Instagram, etc.)
-        else if (t.includes("instagram") || t.includes("conectar")) {
+        // Comando de Voz: Instagram / Redes
+        else if (t.includes("instagram") || t.includes("conectar instagram")) {
             respostaVoz = "A estabelecer ligação com o Instagram.";
             painelHtml = `
                 <div style="background:#000; color:#ff0055; font-family:monospace; padding:30px; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                    <h2>[ INTEGRAÇÃO INSTAGRAM ]</h2>
-                    <p style="color:#aaa; margin-top:10px;">Ligação segura com a API estabelecida.</p>
+                    <h2 style="letter-spacing:2px; margin-bottom:10px;">[ INSTAGRAM GATEWAY ]</h2>
+                    <p style="color:#aaa; font-size:13px; margin-bottom:20px;">Interface de conexão tática ativa.</p>
+                    <button onclick="parent.fecharDual()" style="background:#ff0055; color:#000; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; font-family:monospace;">FECHAR PAINEL</button>
                 </div>
             `;
-            actionType = "dual_fullscreen";
+            actionType = "dual_open";
         }
-        // Criar Jogos / Apps / Texturas / Fotos
+        // Comando de Voz: Criar Jogo / Site / App / Texturas
         else if (t.includes("jogo") || t.includes("site") || t.includes("app") || t.includes("criar") || t.includes("textura") || t.includes("foto")) {
-            respostaVoz = "A gerar ambiente dual e carregar ativos na nuvem.";
+            respostaVoz = "Ambiente dual ativado. Pronto para carregar texturas e criar aplicações.";
             painelHtml = `
                 <div style="background:#010108; color:#00f3ff; font-family:monospace; padding:30px; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                    <h2 style="letter-spacing:2px; margin-bottom:15px;">[ NEXUS DUAL SANDBOX // ATIVO ]</h2>
-                    <p style="color:#888; font-size:13px; margin-bottom:20px;">Ambiente pronto para texturas, upload de imagens e simulação de IA.</p>
-                    <input type="file" id="fileUpload" style="color:#00f3ff; margin-bottom:15px;" />
-                    <button onclick="parent.fecharDual()" style="background:#00f3ff; color:#000; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; font-family:monospace;">FECHAR DUAL / VOLTAR À BOLA</button>
+                    <h2 style="letter-spacing:2px; margin-bottom:15px;">[ NEXUS DUAL SANDBOX ]</h2>
+                    <p style="color:#888; font-size:13px; margin-bottom:15px;">Selecione ficheiros, texturas ou envie instruções visuais.</p>
+                    <input type="file" id="fileUpload" style="color:#00f3ff; margin-bottom:20px;" />
+                    <button onclick="parent.fecharDual()" style="background:#00f3ff; color:#000; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; font-family:monospace;">FECHAR PAINEL DUAL</button>
                 </div>
             `;
-            actionType = "dual_fullscreen";
+            actionType = "dual_open";
         } else {
-            respostaVoz = `Comando processado: ${prompt}`;
+            respostaVoz = `Comando compreendido: ${prompt}`;
         }
 
         res.json({ resposta: respostaVoz, painel: painelHtml, action: actionType });
 
     } catch (e) {
         console.error(e);
-        res.status(500).json({ erro: "Erro interno no servidor." });
+        res.status(500).json({ erro: "Erro interno." });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Nexus Core a correr na porta ${PORT}`);
+    console.log(`Nexus Core online na porta ${PORT}`);
 });
