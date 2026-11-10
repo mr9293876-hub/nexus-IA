@@ -15,7 +15,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.A
 app.post('/api/nexus', async (req, res) => {
     try {
         const { prompt } = req.body;
-        console.log("[Nexus Core] Comando:", prompt);
+        console.log("[Nexus Core] Comando recebido:", prompt);
 
         if (!prompt) return res.status(400).json({ erro: "Comando vazio." });
 
@@ -73,7 +73,7 @@ app.post('/api/nexus', async (req, res) => {
                                 });
                                 function loop() {
                                     ctx.fillStyle = '#050510';
-                                    ctx.fillRect(0,0,400,250);
+                                    ctx.fillRect(0, 0, 400, 250);
                                     ctx.fillStyle = '#00f3ff';
                                     ctx.fillRect(x, y, 20, 20);
                                     ctx.fillStyle = '#ffd700';
