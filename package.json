@@ -1,7 +1,7 @@
 {
   "name": "nexus-core",
   "version": "1.0.0",
-  "description": "Nexus AI Core System",
+  "description": "Nexus AI Core System with Multi-API Failover",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
