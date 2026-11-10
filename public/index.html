@@ -6,215 +6,22 @@
     <title>Nexus Core Engine</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; display: flex; }
-
-        /* Esfera 3D centrada no ecrã inteiro */
+        body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
         #main-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 1; }
         canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-
-        /* Painel Dual Lateral / Overlay */
-        #dual-overlay { position: fixed; top: 0; right: -100%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease-in-out, width 0.4s ease-in-out; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
+        #dual-overlay { position: fixed; top: 0; right: -100%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease, width 0.4s ease; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
         iframe { width: 100%; height: 100%; border: none; background: #000; }
-
-        /* Teclado Virtual */
-        #virtual-keyboard { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(5,5,15,0.95); border: 1px solid #00f3ff; padding: 10px; display: none; z-index: 200; }
-        #virtual-keyboard input { background: #000; border: 1px solid #00f3ff; color: #00f3ff; padding: 8px; width: 280px; font-family: monospace; }
     </style>
 </head>
 <body>
-
     <div id="main-container">
         <canvas id="nexusCanvas"></canvas>
-        <div id="virtual-keyboard">
-            <input type="text" id="manualInput" placeholder="Digite o comando para o Nexus..." onkeypress="handleKey(event)">
-        </div>
     </div>
 
     <div id="dual-overlay">
         <iframe id="dualFrame"></iframe>
     </div>
 
-    <script>
-        const CLOUD_URL = 'https://nexus-ia-syc5.onrender.com';
-
-        // --- ESFERA 3D (3000 PONTOS CENTRADA) ---
-        const canvas = document.getElementById('nexusCanvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
-
-        const numPoints = 3000;
-        const points = [];
-        const radius = 180;
-
-        for (let i = 0; i < numPoints; i++) {
-            const phi = Math.acos(-1 + (2 * i) / numPoints);
-            const theta = Math.sqrt(numPoints * Math.PI) * phi;
-            points.push({
-                x: radius * Math.cos(theta) * Math.sin(phi),
-                y: radius * Math.sin(theta) * Math.sin(phi),
-                z: radius * Math.cos(phi)
-            });
-        }
-
-        let angleX = 0, angleY = 0;
-        let speed = 1;
-        let ballState = "idle";
-
-        function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
-            ctx.fillRect(0, 0, width, height);
-
-            const cx = width / 2;
-            const cy = height / 2;
-
-            if (ballState === "listening") speed = 3.5;
-            else if (ballState === "speaking") speed = 2.2;
-            else speed = 1;
-
-            angleX += 0.004 * speed;
-            angleY += 0.007 * speed;
-
-            const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
-            const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
-
-            for (let i = 0; i < points.length; i++) {
-                let p = points[i];
-                let x1 = p.x * cosY - p.z * sinY;
-                let z1 = p.z * cosY + p.x * sinY;
-                let y2 = p.y * cosX - z1 * sinX;
-                let z2 = z1 * cosX + p.y * sinX;
-
-                let fov = 400;
-                let scale = fov / (fov + z2);
-                let px = x1 * scale + cx;
-                let py = y2 * scale + cy;
-
-                if (z2 > -fov) {
-                    let alpha = (z2 + radius) / (2 * radius);
-                    alpha = Math.max(0.1, Math.min(1, alpha));
-                    ctx.fillStyle = ballState === "listening" ? `rgba(0, 243, 255, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-                    ctx.fillRect(px, py, scale * 1.5, scale * 1.5);
-                }
-            }
-            requestAnimationFrame(animate);
-        }
-        animate();
-
-        // --- VOZ MASCULINA ---
-        function falarVozMasculina(texto) {
-            const synth = window.speechSynthesis;
-            const utter = new SpeechSynthesisUtterance(texto);
-            utter.lang = 'pt-BR';
-
-            const voices = synth.getVoices();
-            const vozMasculina = voices.find(v => v.lang.includes('pt') && (v.name.toLowerCase().includes('male') || v.name.toLowerCase().includes('ricardo') || v.name.toLowerCase().includes('daniel') || v.name.toLowerCase().includes('antonio')));
-            if (vozMasculina) utter.voice = vozMasculina;
-
-            utter.onstart = () => { ballState = "speaking"; };
-            utter.onend = () => { ballState = "idle"; };
-
-            synth.speak(utter);
-        }
-
-        // --- CONTROLO DO PAINEL DUAL ---
-        function abrirDual(conteudoHtml) {
-            const overlay = document.getElementById('dual-overlay');
-            if (conteudoHtml) document.getElementById('dualFrame').srcdoc = conteudoHtml;
-            overlay.style.width = '50%';
-            overlay.style.right = '0';
-        }
-
-        function expandirDual() {
-            const overlay = document.getElementById('dual-overlay');
-            overlay.style.width = '100%';
-            overlay.style.right = '0';
-        }
-
-        function fecharDual() {
-            const overlay = document.getElementById('dual-overlay');
-            overlay.style.right = '-100%';
-        }
-
-        function toggleKeyboard() {
-            const kb = document.getElementById('virtual-keyboard');
-            kb.style.display = kb.style.display === 'block' ? 'none' : 'block';
-            if(kb.style.display === 'block') document.getElementById('manualInput').focus();
-        }
-
-        function handleKey(e) {
-            if(e.key === 'Enter') {
-                enviarComando(e.target.value);
-                e.target.value = '';
-                toggleKeyboard();
-            }
-        }
-
-        // --- ENVIO DO COMANDO PARA A NUVEM ---
-        async function enviarComando(frase) {
-            ballState = "listening";
-            try {
-                const res = await fetch(`${CLOUD_URL}/api/nexus`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: frase })
-                });
-                const dados = await res.json();
-
-                if (dados.resposta) falarVozMasculina(dados.resposta);
-
-                if (dados.action === "open" && dados.painel) {
-                    abrirDual(dados.painel);
-                } else if (dados.action === "expand") {
-                    expandirDual();
-                } else if (dados.action === "close") {
-                    fecharDual();
-                } else if (dados.action === "keyboard") {
-                    toggleKeyboard();
-                }
-            } catch (e) {
-                ballState = "idle";
-                console.error("Erro de ligação:", e);
-            }
-        }
-
-        // --- RECONHECIMENTO DE VOZ MELHORADO (Aguarda a frase completa) ---
-        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (window.SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'pt-BR';
-
-            let timeoutVoz;
-
-            recognition.onresult = (event) => {
-                const ultimo = event.results.length - 1;
-                const frase = event.results[ultimo][0].transcript.trim();
-
-                if (frase.toLowerCase().includes("nexus")) {
-                    clearTimeout(timeoutVoz);
-                    // Aguarda 800ms de silêncio para garantir que disseste a frase inteira antes de enviar
-                    timeoutVoz = setTimeout(() => {
-                        enviarComando(frase);
-                    }, 800);
-                }
-            };
-
-            recognition.onend = () => { recognition.start(); };
-
-            window.addEventListener('load', () => {
-                window.speechSynthesis.getVoices();
-                recognition.start();
-            });
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
