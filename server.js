@@ -10,7 +10,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializar a API do Gemini
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
 
 app.post('/api/nexus', async (req, res) => {
@@ -26,7 +25,7 @@ app.post('/api/nexus', async (req, res) => {
         let actionType = "none";
 
         if (t.includes("fechar") || t.includes("ocultar")) {
-            respostaVoz = "Painel fechado, senhor.";
+            respostaVoz = "Painel fechado.";
             actionType = "close";
         } 
         else if (t.includes("expandir") || t.includes("tela cheia")) {
@@ -38,7 +37,6 @@ app.post('/api/nexus', async (req, res) => {
             actionType = "keyboard";
         }
         else {
-            // Processamento com a IA Real do Gemini
             try {
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
@@ -78,7 +76,6 @@ app.post('/api/nexus', async (req, res) => {
                                     ctx.fillRect(0,0,400,250);
                                     ctx.fillStyle = '#00f3ff';
                                     ctx.fillRect(x, y, 20, 20);
-                                    // Cofre simulado
                                     ctx.fillStyle = '#ffd700';
                                     ctx.fillRect(300, 100, 25, 25);
                                     requestAnimationFrame(loop);
