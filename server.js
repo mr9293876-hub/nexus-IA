@@ -10,15 +10,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Inicializa a API do Gemini com a chave de ambiente
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.API_KEY });
+// Inicializa a API do Gemini de forma segura
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 app.post('/api/nexus', async (req, res) => {
     try {
         const { prompt } = req.body;
-        console.log("[Nexus Core] Comando recebido:", prompt);
+        console.log("[Nexus Core] Pedido recebido:", prompt);
 
         if (!prompt) return res.status(400).json({ erro: "Comando vazio." });
+
+        if (!apiKey) {
+            return res.status(500).json({ erro: "Chave da API do Gemini não configurada no Render (.env)." });
+        }
 
         const t = prompt.toLowerCase();
         let respostaVoz = "Comando processado.";
@@ -33,73 +38,48 @@ app.post('/api/nexus', async (req, res) => {
             respostaVoz = "Painel expandido.";
             actionType = "expand";
         }
-        else if (t.includes("teclado")) {
-            respostaVoz = "Teclado ativado.";
-            actionType = "keyboard";
-        }
         else {
             try {
-                // Inteligência real do Gemini em segundo plano
+                // Comunicação direta com o Gemini em segundo plano
                 const response = await ai.models.generateContent({
                     model: 'gemini-2.5-flash',
-                    contents: `Atua como o núcleo Jarvis do sistema Nexus. O utilizador ordenou: "${prompt}". Responde de forma direta e tática em Português.`
+                    contents: `Atua como o núcleo Jarvis do sistema Nexus. O utilizador ordenou: "${prompt}". Responde de forma direta, tática e em Português.`
                 });
 
                 respostaVoz = "Comando executado pela inteligência central.";
                 const textoGerado = response.text || "Operação concluída.";
 
-                if (t.includes("jogo") || t.includes("minecraft") || t.includes("criar")) {
+                if (t.includes("jogo") || t.includes("minecraft") || t.includes("criar") || t.includes("código")) {
                     painelHtml = `
                         <!DOCTYPE html>
                         <html>
                         <head>
                             <style>
                                 body { margin: 0; background: #000; color: #00f3ff; font-family: monospace; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-                                canvas { background: #050510; border: 1px solid #00f3ff; box-shadow: 0 0 15px rgba(0,243,255,0.3); }
-                                h3 { margin-bottom: 8px; letter-spacing: 2px; font-size: 13px; }
+                                pre { background: #050510; border: 1px solid #00f3ff; padding: 15px; width: 90%; height: 65vh; overflow: auto; font-size: 12px; color: #00ff66; border-radius: 6px; }
+                                h3 { margin-bottom: 10px; letter-spacing: 2px; font-size: 14px; }
                             </style>
                         </head>
                         <body>
-                            <h3>[ NEXUS ENGINE // SANDBOX DE JOGO ]</h3>
-                            <canvas id="gameCanvas" width="400" height="250"></canvas>
-                            <p style="color:#888; font-size:11px; margin-top:8px;">Use as setas para mover. Cofre de bioma ativo.</p>
-                            <script>
-                                const canvas = document.getElementById('gameCanvas');
-                                const ctx = canvas.getContext('2d');
-                                let x = 50, y = 125;
-                                window.addEventListener('keydown', e => {
-                                    if(e.key === 'ArrowUp') y -= 15;
-                                    if(e.key === 'ArrowDown') y += 15;
-                                    if(e.key === 'ArrowLeft') x -= 15;
-                                    if(e.key === 'ArrowRight') x += 15;
-                                });
-                                function loop() {
-                                    ctx.fillStyle = '#050510';
-                                    ctx.fillRect(0, 0, 400, 250);
-                                    ctx.fillStyle = '#00f3ff';
-                                    ctx.fillRect(x, y, 20, 20);
-                                    ctx.fillStyle = '#ffd700';
-                                    ctx.fillRect(300, 100, 25, 25);
-                                    requestAnimationFrame(loop);
-                                }
-                                loop();
-                            </script>
+                            <h3>[ NEXUS CORE // CÓDIGO & SANDBOX ]</h3>
+                            <pre>${textoGerado}</pre>
+                            <button onclick="parent.fecharDual()" style="margin-top:15px; background:#00f3ff; color:#000; border:none; padding:8px 18px; font-weight:bold; cursor:pointer; border-radius:4px;">FECHAR PAINEL</button>
                         </body>
                         </html>
                     `;
                 } else {
                     painelHtml = `
                         <div style="background:#000; color:#00f3ff; font-family:monospace; padding:30px; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center;">
-                            <h3 style="letter-spacing:2px; margin-bottom:12px;">[ RELATÓRIO DO SISTEMA ]</h3>
-                            <p style="color:#ccc; font-size:13px; max-width:450px; line-height:1.4;">${textoGerado}</p>
-                            <button onclick="parent.fecharDual()" style="margin-top:20px; background:#00f3ff; color:#000; border:none; padding:8px 16px; font-weight:bold; cursor:pointer;">FECHAR PAINEL</button>
+                            <h3 style="letter-spacing:2px; margin-bottom:15px;">[ RELATÓRIO DO NÚCLEO ]</h3>
+                            <p style="color:#ccc; font-size:13px; max-width:450px; line-height:1.5;">${textoGerado}</p>
+                            <button onclick="parent.fecharDual()" style="margin-top:20px; background:#00f3ff; color:#000; border:none; padding:8px 18px; font-weight:bold; cursor:pointer; border-radius:4px;">FECHAR PAINEL</button>
                         </div>
                     `;
                 }
                 actionType = "open";
             } catch (err) {
                 console.error("Erro na API do Gemini:", err);
-                respostaVoz = "Erro ao comunicar com o modelo de inteligência artificial.";
+                return res.status(500).json({ erro: "Erro ao comunicar com a API do Google Gemini." });
             }
         }
 
@@ -111,5 +91,5 @@ app.post('/api/nexus', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Nexus Core a correr na porta ${PORT}`);
+    console.log(`Nexus Core online na porta ${PORT}`);
 });

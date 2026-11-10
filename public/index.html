@@ -7,21 +7,247 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body, html { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
-        #main-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 1; }
+        #main-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: flex; align-items: center; justify-content: center; background: #000; z-index: 1; cursor: pointer; }
         canvas { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+        
+        /* Teclado Bonito e Flutuante (Aparece ao clicar na bola) */
+        #nexus-keyboard-container {
+            position: fixed;
+            bottom: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: rgba(5, 5, 16, 0.85);
+            border: 1px solid #00f3ff;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            backdrop-filter: blur(10px);
+            padding: 15px;
+            border-radius: 12px;
+            z-index: 200;
+            transition: bottom 0.4s ease;
+            display: flex;
+            gap: 10px;
+        }
+        #nexus-keyboard-container.active {
+            bottom: 30px;
+        }
+        #nexus-input {
+            flex: 1;
+            background: #000;
+            border: 1px solid #00f3ff;
+            color: #00f3ff;
+            padding: 12px 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border-radius: 6px;
+            outline: none;
+        }
+        #nexus-input::placeholder {
+            color: rgba(0, 243, 255, 0.4);
+        }
+        #nexus-send-btn {
+            background: #00f3ff;
+            color: #000;
+            border: none;
+            padding: 0 20px;
+            font-weight: bold;
+            font-family: monospace;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        #nexus-send-btn:hover {
+            background: #00ffaa;
+        }
+
+        /* Painel Dual Lateral */
         #dual-overlay { position: fixed; top: 0; right: -100%; width: 50%; height: 100%; background: #010108; z-index: 100; transition: right 0.4s ease, width 0.4s ease; border-left: 1px solid #00f3ff; display: flex; flex-direction: column; }
         iframe { width: 100%; height: 100%; border: none; background: #000; }
     </style>
 </head>
 <body>
-    <div id="main-container">
+    <div id="main-container" onclick="toggleTeclado()">
         <canvas id="nexusCanvas"></canvas>
+    </div>
+
+    <!-- Teclado Estilizado -->
+    <div id="nexus-keyboard-container" onclick="event.stopPropagation()">
+        <input type="text" id="nexus-input" placeholder="Digite seu comando para o Nexus..." onkeypress="handleKeyPress(event)">
+        <button id="nexus-send-btn" onclick="enviarComandoManual()">ENVIAR</button>
     </div>
 
     <div id="dual-overlay">
         <iframe id="dualFrame"></iframe>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        const CLOUD_URL = window.location.origin;
+
+        // --- ESFERA 3D (3000 PONTOS) ---
+        const canvas = document.getElementById('nexusCanvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const numPoints = 3000;
+        const points = [];
+        const radius = 180;
+
+        for (let i = 0; i < numPoints; i++) {
+            const phi = Math.acos(-1 + (2 * i) / numPoints);
+            const theta = Math.sqrt(numPoints * Math.PI) * phi;
+            points.push({
+                x: radius * Math.cos(theta) * Math.sin(phi),
+                y: radius * Math.sin(theta) * Math.sin(phi),
+                z: radius * Math.cos(phi)
+            });
+        }
+
+        let angleX = 0, angleY = 0;
+        let speed = 1;
+        let ballState = "idle";
+
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            const cx = width / 2;
+            const cy = height / 2;
+
+            if (ballState === "listening") speed = 3.5;
+            else if (ballState === "speaking") speed = 2.2;
+            else speed = 1;
+
+            angleX += 0.004 * speed;
+            angleY += 0.007 * speed;
+
+            const cosX = Math.cos(angleX), sinX = Math.sin(angleX);
+            const cosY = Math.cos(angleY), sinY = Math.sin(angleY);
+
+            for (let i = 0; i < points.length; i++) {
+                let p = points[i];
+                let x1 = p.x * cosY - p.z * sinY;
+                let z1 = p.z * cosY + p.x * sinY;
+                let y2 = p.y * cosX - z1 * sinX;
+                let z2 = z1 * cosX + p.y * sinX;
+
+                let fov = 400;
+                let scale = fov / (fov + z2);
+                let px = x1 * scale + cx;
+                let py = y2 * scale + cy;
+
+                if (z2 > -fov) {
+                    let alpha = (z2 + radius) / (2 * radius);
+                    alpha = Math.max(0.1, Math.min(1, alpha));
+                    ctx.fillStyle = ballState === "listening" ? `rgba(0, 243, 255, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+                    ctx.fillRect(px, py, scale * 1.5, scale * 1.5);
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        // --- CONTROLO DO TECLADO FLUTUANTE ---
+        function toggleTeclado() {
+            const kb = document.getElementById('nexus-keyboard-container');
+            kb.classList.toggle('active');
+            if(kb.classList.contains('active')) {
+                document.getElementById('nexus-input').focus();
+            }
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') {
+                enviarComandoManual();
+            }
+        }
+
+        async function enviarComandoManual() {
+            const input = document.getElementById('nexus-input');
+            const prompt = input.value.trim();
+            if (!prompt) return;
+
+            input.value = '';
+            toggleTeclado();
+            await executarComandoNoServidor(prompt);
+        }
+
+        // --- COMUNICAÇÃO COM O SERVIDOR E GEMINI ---
+        async function executarComandoNoServidor(frase) {
+            try {
+                ballState = "listening";
+                const res = await fetch(`${CLOUD_URL}/api/nexus`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: frase })
+                });
+                
+                const dados = await res.json();
+                ballState = "idle";
+
+                if (dados.erro) {
+                    alert("Erro do assistente: " + dados.erro);
+                    return;
+                }
+
+                if (dados.resposta) falarVoz(dados.resposta);
+                if (dados.action === "open" && dados.painel) abrirDual(dados.painel);
+                else if (dados.action === "expand") expandirDual();
+                else if (dados.action === "close") fecharDual();
+
+            } catch (e) {
+                ballState = "idle";
+                console.error("Erro de conexão:", e);
+                alert("Erro ao conectar à assistência artificial. Verifique o servidor.");
+            }
+        }
+
+        function falarVoz(texto) {
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance(texto);
+            utter.lang = 'pt-BR';
+            synth.speak(utter);
+        }
+
+        function abrirDual(html) {
+            const overlay = document.getElementById('dual-overlay');
+            if (html) document.getElementById('dualFrame').srcdoc = html;
+            if (overlay) { overlay.style.width = '50%'; overlay.style.right = '0'; }
+        }
+        function expandirDual() {
+            const overlay = document.getElementById('dual-overlay');
+            if (overlay) overlay.style.width = '100%';
+        }
+        function fecharDual() {
+            const overlay = document.getElementById('dual-overlay');
+            if (overlay) overlay.style.right = '-100%';
+        }
+        window.fecharDual = fecharDual;
+
+        // Reconhecimento de Voz (Caso queira falar)
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (window.SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = false;
+            recognition.lang = 'pt-BR';
+
+            recognition.onresult = (event) => {
+                const frase = event.results[event.results.length - 1][0].transcript.trim();
+                if (frase.toLowerCase().includes("nexus")) {
+                    executarComandoNoServidor(frase);
+                }
+            };
+            recognition.onend = () => { recognition.start(); };
+            try { recognition.start(); } catch(e) {}
+        }
+    </script>
 </body>
 </html>
