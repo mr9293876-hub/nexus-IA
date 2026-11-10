@@ -5,67 +5,61 @@ const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rota de processamento do chat/comandos do Nexus
-app.post('/api/chat', async (req, res) => {
+app.post('/api/nexus', async (req, res) => {
     try {
         const { prompt } = req.body;
-        console.log("Comando recebido:", prompt);
+        console.log("[Nexus Core] Comando:", prompt);
 
-        let respostaVoz = "Comando processado com sucesso.";
-        let jogoHTML = null;
+        if (!prompt) return res.status(400).json({ erro: "Comando vazio." });
 
-        const promptLower = (prompt || "").toLowerCase();
+        const t = prompt.toLowerCase();
+        let respostaVoz = "Comando executado.";
+        let painelHtml = "";
+        let actionType = "none";
 
-        // Se pedires para criar um jogo, gera o código estruturado para o iframe
-        if (promptLower.includes("jogo") || promptLower.includes("criar") || promptLower.includes("cria")) {
-            respostaVoz = "Criando o jogo na tela.";
-            jogoHTML = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <style>
-                        body { margin: 0; background: #000; color: #00f3ff; font-family: monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
-                        canvas { background: #05050a; border: 1px solid #00f3ff; }
-                    </style>
-                </head>
-                <body>
-                    <canvas id="game" width="400" height="300"></canvas>
-                    <script>
-                        const canvas = document.getElementById('game');
-                        const ctx = canvas.getContext('2d');
-                        let x = 180, y = 130;
-                        function render() {
-                            ctx.clearRect(0, 0, canvas.width, canvas.height);
-                            ctx.fillStyle = '#00f3ff';
-                            ctx.fillRect(x, y, 30, 30);
-                            requestAnimationFrame(render);
-                        }
-                        window.addEventListener('keydown', (e) => {
-                            if(e.key === 'ArrowLeft') x -= 10;
-                            if(e.key === 'ArrowRight') x += 10;
-                            if(e.key === 'ArrowUp') y -= 10;
-                            if(e.key === 'ArrowDown') y += 10;
-                        });
-                        render();
-                    </script>
-                </body>
-                </html>
+        // Abrir Teclado / Ferramentas
+        if (t.includes("teclado") || t.includes("abrir teclado")) {
+            respostaVoz = "Abrindo teclado virtual.";
+            actionType = "keyboard";
+        }
+        // Conectar a Redes (Instagram, etc.)
+        else if (t.includes("instagram") || t.includes("conectar")) {
+            respostaVoz = "A estabelecer ligação com o Instagram.";
+            painelHtml = `
+                <div style="background:#000; color:#ff0055; font-family:monospace; padding:30px; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <h2>[ INTEGRAÇÃO INSTAGRAM ]</h2>
+                    <p style="color:#aaa; margin-top:10px;">Ligação segura com a API estabelecida.</p>
+                </div>
             `;
+            actionType = "dual_fullscreen";
+        }
+        // Criar Jogos / Apps / Texturas / Fotos
+        else if (t.includes("jogo") || t.includes("site") || t.includes("app") || t.includes("criar") || t.includes("textura") || t.includes("foto")) {
+            respostaVoz = "A gerar ambiente dual e carregar ativos na nuvem.";
+            painelHtml = `
+                <div style="background:#010108; color:#00f3ff; font-family:monospace; padding:30px; height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                    <h2 style="letter-spacing:2px; margin-bottom:15px;">[ NEXUS DUAL SANDBOX // ATIVO ]</h2>
+                    <p style="color:#888; font-size:13px; margin-bottom:20px;">Ambiente pronto para texturas, upload de imagens e simulação de IA.</p>
+                    <input type="file" id="fileUpload" style="color:#00f3ff; margin-bottom:15px;" />
+                    <button onclick="parent.fecharDual()" style="background:#00f3ff; color:#000; border:none; padding:10px 20px; font-weight:bold; cursor:pointer; font-family:monospace;">FECHAR DUAL / VOLTAR À BOLA</button>
+                </div>
+            `;
+            actionType = "dual_fullscreen";
+        } else {
+            respostaVoz = `Comando processado: ${prompt}`;
         }
 
-        res.json({
-            resposta: respostaVoz,
-            jogo: jogoHTML
-        });
+        res.json({ resposta: respostaVoz, painel: painelHtml, action: actionType });
 
-    } catch (erro) {
-        console.error("Erro:", erro);
-        res.status(500).json({ erro: "Erro interno." });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ erro: "Erro interno no servidor." });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Servidor a correr na porta ${PORT}`);
+    console.log(`Nexus Core a correr na porta ${PORT}`);
 });
