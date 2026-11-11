@@ -28,6 +28,12 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
+app.use((req, res, next) => {
+  if (req.path === '/' || req.path === '/index.html' || req.path === '/untitled-bridge.js') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 const clients = new Set();

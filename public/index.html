@@ -220,13 +220,17 @@
         function falarVoz(texto) {
             if (!('speechSynthesis' in window)) return;
             const synth = window.speechSynthesis;
-            synth.cancel();
-            const utter = new SpeechSynthesisUtterance(String(texto));
-            utter.lang = 'pt-BR';
-            utter.rate = 1;
-            const voices = synth.getVoices();
-            utter.voice = voices.find(v => /^pt-BR$/i.test(v.lang)) || voices.find(v => /^pt/i.test(v.lang)) || null;
-            synth.speak(utter);
+            const emitir = () => {
+                synth.cancel();
+                const utter = new SpeechSynthesisUtterance(String(texto));
+                utter.lang = 'pt-BR';
+                utter.rate = 1;
+                const voices = synth.getVoices();
+                utter.voice = voices.find(v => /^pt-BR$/i.test(v.lang)) || voices.find(v => /^pt/i.test(v.lang)) || null;
+                synth.speak(utter);
+            };
+            if (synth.getVoices().length) emitir();
+            else { setTimeout(emitir, 250); synth.onvoiceschanged = emitir; }
         }
 
         function abrirDual(html) {
