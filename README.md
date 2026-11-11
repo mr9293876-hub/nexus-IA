@@ -12,6 +12,8 @@ O NEXUS Core preserva a interface escura existente, com a esfera central e o pai
 
 O contrato visual esperado do Untitled é uma mensagem JSON como `{ "type": "visual", "html": "<canvas>...</canvas>" }`. Mensagens enviadas pelo cliente para o Untitled usam `{ "type": "untitled:emit", "payload": {...} }`. Como o nome “Untitled” não identifica sozinho um protocolo público único, a URL e o protocolo são configuráveis por ambiente, sem acoplar o app a uma implementação não confirmada.
 
+Importante: “Untitled UI” é uma biblioteca de interface, não um servidor de renderização WebSocket. Para uma ponte real, é necessário o endereço do seu runtime Untitled ou de outro serviço que hospede os gráficos. Sem essa URL, o NEXUS mantém o WebSocket local funcionando, mas não consegue adivinhar para qual serviço externo deve enviar dados.
+
 ## Execução local
 
 ```bash
@@ -27,6 +29,8 @@ Abra `http://localhost:3000`. O servidor escuta em `0.0.0.0:3000` por padrão e 
 ## Pool de APIs
 
 O pool suporta Gemini, Groq, OpenRouter e DeepSeek. Cada chamada tem timeout; falhas de autenticação, HTTP, resposta vazia ou timeout fazem o sistema tentar o provider seguinte. A chave nunca é enviada ao navegador. Configure apenas as variáveis do provider que realmente possui.
+
+Se todas as chaves forem recusadas, o NEXUS entra em modo degradado: comandos exibem um painel local e pedidos de jogo carregam um jogo HTML5 local. Isso mantém a interface utilizável, mas não substitui uma chave válida para geração por IA.
 
 ## Untitled
 
@@ -50,6 +54,10 @@ ngrok start --config ngrok.yml nexus
 Se você possui um domínio reservado no ngrok, use `ngrok http --domain "$NGROK_DOMAIN" 3000` no lugar do comando acima.
 
 A URL HTTPS do ngrok deve ser usada como origem pública do frontend/Untitled. O WebSocket será automaticamente convertido para `wss://.../ws` pelo cliente.
+
+## Voz
+
+A voz usa `SpeechRecognition` e `speechSynthesis` do navegador. Clique uma vez na esfera para autorizar o microfone; o navegador bloqueia a ativação automática sem gesto do usuário. O navegador também precisa estar em HTTPS quando acessado por domínio público e o usuário precisa conceder permissão ao microfone.
 
 ## Render
 

@@ -161,6 +161,7 @@
             if(kb.classList.contains('active')) {
                 document.getElementById('nexus-input').focus();
             }
+            iniciarVoz();
         }
 
         function handleKeyPress(e) {
@@ -210,9 +211,14 @@
         }
 
         function falarVoz(texto) {
+            if (!('speechSynthesis' in window)) return;
             const synth = window.speechSynthesis;
-            const utter = new SpeechSynthesisUtterance(texto);
+            synth.cancel();
+            const utter = new SpeechSynthesisUtterance(String(texto));
             utter.lang = 'pt-BR';
+            utter.rate = 1;
+            const voices = synth.getVoices();
+            utter.voice = voices.find(v => /^pt-BR$/i.test(v.lang)) || voices.find(v => /^pt/i.test(v.lang)) || null;
             synth.speak(utter);
         }
 
@@ -231,22 +237,29 @@
         }
         window.fecharDual = fecharDual;
 
-        // Reconhecimento de Voz (Caso queira falar)
+        // Reconhecimento de voz: inicia somente após clique/toque, pois os browsers bloqueiam
+        // microfone iniciado automaticamente sem gesto explícito do usuário.
         window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (window.SpeechRecognition) {
-            const recognition = new SpeechRecognition();
+        let recognition = null;
+        let vozAtiva = false;
+        function iniciarVoz() {
+            if (!window.SpeechRecognition || vozAtiva) return;
+            recognition = recognition || new SpeechRecognition();
             recognition.continuous = true;
             recognition.interimResults = false;
             recognition.lang = 'pt-BR';
-
             recognition.onresult = (event) => {
                 const frase = event.results[event.results.length - 1][0].transcript.trim();
-                if (frase.toLowerCase().includes("nexus")) {
-                    executarComandoNoServidor(frase);
-                }
+                if (frase) executarComandoNoServidor(frase);
             };
-            recognition.onend = () => { recognition.start(); };
-            try { recognition.start(); } catch(e) {}
+            recognition.onerror = (event) => {
+                vozAtiva = false;
+                console.warn('Voz NEXUS:', event.error);
+            };
+            recognition.onend = () => {
+                if (vozAtiva) { try { recognition.start(); } catch(e) {} }
+            };
+            try { recognition.start(); vozAtiva = true; } catch(e) { console.warn('Microfone indisponível:', e); }
         }
     </script>
     <script src="/untitled-bridge.js"></script>
