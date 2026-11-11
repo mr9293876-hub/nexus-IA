@@ -1,14 +1,19 @@
 {
   "name": "nexus-core",
-  "version": "1.0.0",
-  "description": "Nexus AI Core System with Multi-API Failover",
+  "version": "1.1.0",
+  "description": "NEXUS Core with realtime Untitled bridge and multi-provider AI failover",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "@google/genai": "^1.16.0",
     "dotenv": "^16.4.5",
-    "@google/genai": "latest"
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
   }
 }

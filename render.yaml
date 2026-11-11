@@ -5,6 +5,9 @@ services:
     plan: free
     buildCommand: npm install && pip install -r ai-core/requirements.txt
     startCommand: node server.js
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: NODE_VERSION
+        value: 20
