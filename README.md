@@ -36,6 +36,19 @@ Se todas as chaves forem recusadas, o NEXUS entra em modo degradado: comandos ex
 
 Defina `UNTITLED_WS_URL` com o endpoint WebSocket do runtime Untitled. Se o endpoint exigir autenticação, use `UNTITLED_WS_TOKEN` e, se necessário, `UNTITLED_WS_PROTOCOL`. O NEXUS reconecta automaticamente após queda e repassa eventos entre os clientes conectados.
 
+### Bridge Colab incluído
+
+O notebook informado não executa um runtime Untitled; ele apenas instala XFCE/VNC, FastAPI e ngrok. Para obter um endpoint funcional compatível com o NEXUS, copie o repositório para o Colab ou abra `colab/untitled_bridge.py` e execute:
+
+```python
+!pip -q install fastapi uvicorn pyngrok
+import os
+os.environ["NGROK_AUTHTOKEN"] = "COLE_O_TOKEN_SOMENTE_NESTA_SESSAO"
+%run colab/untitled_bridge.py
+```
+
+O bridge imprimirá `UNTITLED_WS_URL=wss://.../ws`. Configure esse valor como `UNTITLED_WS_URL` no Environment do serviço `nexus-IA` no Render. Não grave o token do ngrok no Git, no notebook compartilhado ou no `.env` versionado.
+
 ## ngrok
 
 Instale o ngrok e autentique uma vez:
