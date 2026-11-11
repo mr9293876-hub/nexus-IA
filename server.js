@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const PORT = Number(process.env.PORT || 3000);
 const HOST = process.env.HOST || '0.0.0.0';
-const REQUEST_TIMEOUT_MS = Number(process.env.NEXUS_REQUEST_TIMEOUT_MS || 18000);
+const REQUEST_TIMEOUT_MS = Math.min(Math.max(Number(process.env.NEXUS_REQUEST_TIMEOUT_MS || 6000), 2000), 8000);
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || '*').split(',').map((value) => value.trim()).filter(Boolean);
 const providerOrder = (process.env.NEXUS_PROVIDER_ORDER || 'gemini,groq,openrouter,deepseek')
   .split(',').map((value) => value.trim().toLowerCase()).filter(Boolean);

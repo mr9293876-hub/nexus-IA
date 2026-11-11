@@ -161,6 +161,7 @@
             if(kb.classList.contains('active')) {
                 document.getElementById('nexus-input').focus();
             }
+            if ('speechSynthesis' in window) window.speechSynthesis.resume();
             iniciarVoz();
         }
 
@@ -184,17 +185,21 @@
         async function executarComandoNoServidor(frase) {
             try {
                 ballState = "listening";
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 15000);
                 const res = await fetch(`${CLOUD_URL}/api/nexus`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: frase })
+                    body: JSON.stringify({ prompt: frase }),
+                    signal: controller.signal
                 });
-                
+                clearTimeout(timeout);
                 const dados = await res.json();
                 ballState = "idle";
 
                 if (dados.erro) {
-                    alert("Erro do assistente: " + dados.erro);
+                    falarVoz(dados.erro);
+                    abrirDual(`<div style="background:#000;color:#00f3ff;font:14px monospace;padding:30px;height:100vh;text-align:center"><h3>[ NEXUS // ERRO CONTROLADO ]</h3><p style="color:#ccc;max-width:450px;line-height:1.5">${String(dados.erro).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]))}</p><button onclick="parent.fecharDual()" style="background:#00f3ff;color:#000;border:0;padding:8px 16px;font-weight:bold">FECHAR PAINEL</button></div>`);
                     return;
                 }
 
@@ -206,7 +211,9 @@
             } catch (e) {
                 ballState = "idle";
                 console.error("Erro de conexão:", e);
-                alert("Erro ao conectar à assistência artificial. Verifique o servidor.");
+                const msg = e.name === 'AbortError' ? 'A inteligência demorou demais. O núcleo local continua disponível.' : 'Falha de conexão com a inteligência. O núcleo local continua disponível.';
+                falarVoz(msg);
+                abrirDual(`<div style="background:#000;color:#00f3ff;font:14px monospace;padding:30px;height:100vh;text-align:center"><h3>[ NEXUS // MODO LOCAL ]</h3><p style="color:#ccc;max-width:450px;line-height:1.5">${msg}</p><button onclick="parent.fecharDual()" style="background:#00f3ff;color:#000;border:0;padding:8px 16px;font-weight:bold">FECHAR PAINEL</button></div>`);
             }
         }
 
